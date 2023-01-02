@@ -1,0 +1,109 @@
+include ap:audioply
+
+//
+//                   OO  OO
+//                   OO
+//  OOOOO OO  OO  OOOOO OOO   OOOO
+// OO  OO OO  OO OO  OO  OO  OO  OO
+// OO  OO OO  OO OO  OO  OO  OO  OO
+// OO  OO OO  OO OO  OO  OO  OO  OO
+//  OOOOO  OOOOO  OOOOO OOOO  OOOO
+//
+
+byte shape
+
+procedure @audio_play_pacmen_canal(shape)
+begin
+  // TODO: das Audio duerfen wir nur spielen, wenn der Titelsong nicht an ist. MIST!
+  if game_mode == MODE_INTRO then return 0 // im Intro Mode spielen wir die Titel-Melodie
+
+  @music_play_single_shape(pacmen_canal, shape)
+end
+
+procedure @audio_play_augen_canal(shape)
+begin
+  // TODO: das Audio duerfen wir nur spielen, wenn der Titelsong nicht an ist. MIST!
+  if game_mode == MODE_INTRO then return 0 // im Intro Mode spielen wir die Titel-Melodie
+
+  @music_play_single_shape(augen_canal, shape)
+end
+
+procedure @audio_play_start_tic_toc()
+begin
+  @music_play_single_shape(tic_toc_canal, 17) // tic toc
+end
+
+procedure @audio_play_stop_augen()
+begin
+  @audio_play_augen_canal(18)  // stop audio with empty shape
+end
+
+procedure @audio_play_stop_tic_toc()
+begin
+  @music_play_single_shape(tic_toc_canal, 18) // stop audio with empty shape
+end
+
+procedure @audio_play_music_init()
+begin
+  @music_init(adr:@pacmen_music, 0, 0)
+end
+
+procedure @audio_play_next_level()
+begin
+  @audio_play_music_init()
+  @audio_play_pacmen_canal(8) // ?shape_PACMEN_O4_up
+end
+
+procedure @audio_play_pacmen_lost_life()
+begin
+  @audio_play_pacmen_canal(8)
+end
+
+procedure @audio_play_pacmen_game_over()
+begin
+  @audio_play_music_init()
+  @audio_play_augen_canal(9)
+end
+
+procedure @audio_play_wait_as_long_music_plays()
+begin
+  while @music_count_shapes_play() != 0 do
+  begin
+    @waitline(4)
+  end
+end
+
+procedure @audio_play_audio_init()
+begin
+  @audio_play_wait_as_long_music_plays()
+  @music_init(adr:@pacmen_audio, 0, 0)
+end
+
+procedure @audio_play_ghost_eaten()
+begin
+  @music_play_single_shape(ghost_canal, 5)
+end
+
+procedure @audio_play_augen_movement()
+begin
+  @audio_play_augen_canal(3)
+end
+
+const AUDCTL_0 = 0
+
+procedure @audio_play_muted_charge()
+begin
+  @music_init(adr:@pacmen_audio, AUDCTL_0, adr:@audio_takt_muted_charge)
+  @music_start_timer()
+  @sleep(5)
+  @audio_play_wait_as_long_music_plays()
+  @music_stop_timer()
+  @music_set_speed(3)
+end
+
+
+procedure @audio_play_extra_fanfare()
+begin
+  @music_init(adr:@pacmen_audio, AUDCTL_0, adr:@audio_takt_extra_fanfare)
+  @music_start_timer()
+end

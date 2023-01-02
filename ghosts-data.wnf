@@ -1,0 +1,1580 @@
+include gh:ghosts
+
+
+
+//
+//  OOOOO  OO                        OO
+// OO   OO OO       OOOOO   OOOOO  OOOOOOO  OOOOO
+// OO      OOOOOO  OO   OO OO        OO    OO
+// OO OOOO OO   OO OO   OO  OOOOO    OO     OOOOO
+// OO   OO OO   OO OO   OO      OO   OO         OO
+//  OOOOO  OO   OO  OOOOO   OOOOO     OOOO  OOOOO
+//
+
+// Da Player Missile Grafik nur eine Farbe liefert, sollen die Augen
+// im Zeichensatz verankert werden. Da dieser aber weniger beweglich ist,
+// helfen wir etwas nach.
+// Eigentlich bräuchten wir 6 Bytes um ein Augenpaar frei zu bewegen.
+// Wenn man aber die Beweglichkeit etwas einschränkt und alles an den Zeichensatz anpasst
+// sollten 4 Bytes reichen
+// 3 Bytes um das Augenpaar in einer Zeile horizontal zu bewegen,
+//   setzt voraus, das wir in der richtigen Zeile sind
+// 4 Bytes um das Augenpaar in der vertikalen zu bewegen.
+//   setzt voraus, das wir in der richtigen Spalte sind
+// Ist etwas tricky, aber recht schön anzusehen
+
+// Jetzt fehlt den Geistern noch das untere Kleid/flattern
+
+// Und vielleicht ein Augenaufschlag. Das wäre voll cool.
+
+byte array ghost_look_left0[1] = [
+%..1111..,
+%.111111.,
+%..111.1.,
+%...1...1,
+%...1...1,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%.1..1..1,
+%........
+]
+
+byte array ghost_look_left1[1] = [
+%..1111..,
+%.111111.,
+%..111.1.,
+%...1...1,
+%...1...1,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%.11.11.1,
+%..1..1..,
+%........
+]
+
+byte array ghost_look_left2[1] = [
+%..1111..,
+%.111111.,
+%..111.1.,
+%...1...1,
+%...1...1,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.11.11.,
+%1..1..1.,
+%........
+]
+
+byte array ghost_look_left3[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%...1...1,
+%...1...1,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%.1..1..1,
+%........
+]
+
+byte array ghost_look_left4[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%1.111.11,
+%...1...1,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%.11.11.1,
+%..1..1..,
+%........
+]
+
+byte array ghost_look_left5[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%1.111.11,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.11.11.,
+%1..1..1.,
+%........
+]
+
+byte array ghost_look_left6[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%11111111,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%.1..1..1,
+%........
+]
+
+byte array ghost_look_left7[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%.11.11.1,
+%..1..1..,
+%........
+]
+
+byte array ghost_look_left8[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.11.11.,
+%1..1..1.,
+%........
+]
+
+byte array ghost_look_left9[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%...1...1,
+%...1...1,
+%1.111.11,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%.1..1..1,
+%........
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+byte array ghost_look_right0[1] = [
+%..1111..,
+%.111111.,
+%.1.111..,
+%1...1...,
+%1...1...,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%1..1..1.,
+%........
+]
+byte array ghost_look_right1[1] = [
+%..1111..,
+%.111111.,
+%.1.111..,
+%1...1...,
+%1...1...,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.11.11.,
+%..1..1..,
+%........
+]
+byte array ghost_look_right2[1] = [
+%..1111..,
+%.111111.,
+%.1.111..,
+%1...1...,
+%1...1...,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%.11.11.1,
+%.1..1..1,
+%........
+]
+
+byte array ghost_look_right3[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%1...1...,
+%1...1...,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%1..1..1.,
+%........
+]
+byte array ghost_look_right4[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11.111.1,
+%1...1...,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.11.11.,
+%..1..1..,
+%........
+]
+byte array ghost_look_right5[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11.111.1,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%.11.11.1,
+%.1..1..1,
+%........
+]
+
+byte array ghost_look_right6[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%11111111,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%1..1..1.,
+%........
+]
+byte array ghost_look_right7[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%1.11.11.,
+%..1..1..,
+%........
+]
+byte array ghost_look_right8[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%.11.11.1,
+%.1..1..1,
+%........
+]
+
+byte array ghost_look_right9[1] = [
+%..1111..,
+%.111111.,
+%.111111.,
+%11111111,
+%11111111,
+%1...1...,
+%1...1...,
+%11.111.1,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11111111,
+%11.11.11,
+%1..1..1.,
+%........
+]
+
+word array @left_ghost_animation[257] = [
+ ghost_look_left0,
+ ghost_look_left1,
+ ghost_look_left2,
+
+ -2,
+
+ ghost_look_left3, // Augen zuschlag
+ ghost_look_left4,
+ ghost_look_left5,
+ ghost_look_left6,
+ ghost_look_left7,
+ ghost_look_left8,
+ ghost_look_left9,
+ ghost_look_left1,
+ ghost_look_left2,
+ -1
+]
+
+word array @right_ghost_animation[257] = [
+ ghost_look_right0,
+ ghost_look_right1,
+ ghost_look_right2,
+
+ -2,
+
+ ghost_look_right3, // Augen zuschlag
+ ghost_look_right4,
+ ghost_look_right5,
+ ghost_look_right6,
+ ghost_look_right7,
+ ghost_look_right8,
+ ghost_look_right9,
+ ghost_look_right1,
+ ghost_look_right2,
+
+ -1
+]
+
+byte array ghost_empty_right[1] = [
+%........,
+%..1...1.,
+%.1.1.1..,
+%1...1...,
+%1...1...,
+%1...1...,
+%1...1...,
+%.1.1.1.1,
+%..1...1.,
+%........,
+%........,
+%........,
+%........,
+//%...111..,
+//%..1...1.,
+%........,
+%........,
+%........
+]
+
+byte array ghost_empty_left[1] = [
+%........,
+%.1...1..,
+%..1.1.1.,
+%...1...1,
+%...1...1,
+%...1...1,
+%...1...1,
+%1.1.1.1.,
+%.1...1..,
+%........,
+%........,
+%........,
+%........,
+//%..111...,
+//%.1...1..,
+%........,
+%........,
+%........
+]
+
+word array @right_ghost_empty_animation[257] = [
+ ghost_empty_right,
+ ghost_empty_right,
+ ghost_empty_right,
+ -1
+]
+
+word array @left_ghost_empty_animation[257] = [
+ ghost_empty_left,
+ ghost_empty_left,
+ ghost_empty_left,
+ -1
+]
+
+byte array eyes[1] = [
+// vertical left
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#...., // byte 8
+#....,
+#.2..,  // left ...
+#222.,
+#222.,
+#222.,
+#222.,
+#.2..,
+
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#...., // byte 24
+#....,
+#.2..,
+#222.,
+#222.,
+#222.,
+#222.,
+#.2..,
+
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+// vertical right
+#...., // byte 40
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#...., // byte 48
+#....,
+#..2.,  // right ...
+#.222,
+#.222,
+#.222,
+#.222,
+#..2.,
+
+#...., // byte 56
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#...., // byte 64
+#....,
+#..2.,
+#.222,
+#.222,
+#.222,
+#.222,
+#..2.,
+
+#...., // byte 72
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+
+
+// horizontal left
+#...., // byte 80
+#....,
+#.2..,  // left ...
+#222.,
+#222.,
+#222.,
+#222.,
+#.2..,
+
+#...., // byte 88
+#....,
+#.2..,
+#222.,
+#222.,
+#222.,
+#222.,
+#.2..,
+
+#...., // byte 96
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+// horizontal right (left + 1)
+#...., // byte 104
+#....,
+#..2.,  // right ...
+#.222,
+#.222,
+#.222,
+#.222,
+#..2.,
+
+#...., // byte 112
+#....,
+#..2.,
+#.222,
+#.222,
+#.222,
+#.222,
+#..2.,
+
+#...., // byte 120
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+
+#...., // byte 128
+#....,
+#...2,
+#..22,
+#..22,
+#..22,
+#..22,
+#...2,
+
+#...., // byte 136
+#....,
+#...2,
+#2.22,
+#2.22,
+#2.22,
+#2.22,
+#...2,
+
+#...., // byte 144
+#....,
+#....,
+#2...,
+#2...,
+#2...,
+#2...,
+#....,
+
+
+#...., // byte 152
+#....,
+#....,
+#...2,
+#...2,
+#...2,
+#...2,
+#....,
+
+#...., // byte 160
+#....,
+#2...,
+#22.2,
+#22.2,
+#22.2,
+#22.2,
+#2...,
+
+#...., // byte 168
+#....,
+#2...,
+#22..,
+#22..,
+#22..,
+#22..,
+#2...,
+
+#...., // byte 176
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#...., // byte 184
+#....,
+#.2..,  // left ...
+#222.,
+#222.,
+#222.,
+#222.,
+#.2..,
+
+#...., // byte 192
+#....,
+#.2..,
+#222.,
+#222.,
+#222.,
+#222.,
+#.2..
+
+]
+
+byte array pupils_restore[43]
+
+byte array pupils_up1[1] = [
+10,
+#3033,
+#3033,
+
+26,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_up2[1] = [
+
+50,
+#3303,
+#3303,
+
+66,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_up3[1] = [
+
+82,
+#3033,
+#3033,
+
+90,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_up4[1] = [
+
+106,
+#3303,
+#3303,
+
+114,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_up5[1] = [
+
+130,
+#3330,
+#3330,
+
+138,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_up6[1] = [
+
+162,
+#0333,
+#0333,
+
+170,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_up7[1] = [
+
+186,
+#3033,
+#3033,
+
+194,
+#3033,
+#3033,
+
+255 // Endekennung
+]
+
+byte array pupils_right_up1[1] = [
+11,
+#3303,
+#3303,
+
+27,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_right_up2[1] = [
+
+51,
+#3330,
+#3330,
+
+67,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_right_up3[1] = [
+
+83,
+#3303,
+#3303,
+
+91,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_right_up4[1] = [
+
+107,
+#3330,
+#3330,
+
+115,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_right_up5[1] = [
+
+139,
+#0333,
+#0333,
+
+147,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_right_up6[1] = [
+
+163,
+#3033,
+#3033,
+
+171,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_right_up7[1] = [
+
+187,
+#3303,
+#3303,
+
+195,
+#3303,
+#3303,
+
+255 // Endekennung
+]
+
+byte array pupils_right1[1] = [
+12,
+#3303,
+#3303,
+
+28,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_right2[1] = [
+
+52,
+#3330,
+#3330,
+
+68,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_right3[1] = [
+
+84,
+#3303,
+#3303,
+
+92,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_right4[1] = [
+
+108,
+#3330,
+#3330,
+
+116,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_right5[1] = [
+
+140,
+#0333,
+#0333,
+
+148,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_right6[1] = [
+
+164,
+#3033,
+#3033,
+
+172,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_right7[1] = [
+
+188,
+#3303,
+#3303,
+
+196,
+#3303,
+#3303,
+
+255 // Endekennung
+]
+
+byte array pupils_right_down1[1] = [
+13,
+#3303,
+#3303,
+
+29,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_right_down2[1] = [
+
+53,
+#3330,
+#3330,
+
+69,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_right_down3[1] = [
+
+85,
+#3303,
+#3303,
+
+93,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_right_down4[1] = [
+
+109,
+#3330,
+#3330,
+
+117,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_right_down5[1] = [
+
+141,
+#0333,
+#0333,
+
+149,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_right_down6[1] = [
+
+165,
+#3033,
+#3033,
+
+173,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_right_down7[1] = [
+
+189,
+#3303,
+#3303,
+
+197,
+#3303,
+#3303,
+
+255 // Endekennung
+]
+
+byte array pupils_middle1[1] = [
+12,
+#3033,
+#3033,
+
+28,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_middle2[1] = [
+
+52,
+#3303,
+#3303,
+
+68,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_middle3[1] = [
+
+84,
+#3033,
+#3033,
+
+92,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_middle4[1] = [
+
+108,
+#3303,
+#3303,
+
+116,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_middle5[1] = [
+
+132,
+#3330,
+#3330,
+
+140,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_middle6[1] = [
+
+164,
+#0333,
+#0333,
+
+172,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_middle7[1] = [
+
+188,
+#3033,
+#3033,
+
+196,
+#3033,
+#3033,
+
+255 // Endekennung
+]
+
+byte array pupils_left_up1[1] = [
+11,
+#0333,
+#0333,
+
+27,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_left_up2[1] = [
+
+51,
+#3033,
+#3033,
+
+67,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_left_up3[1] = [
+
+83,
+#0333,
+#0333,
+
+91,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_left_up4[1] = [
+
+107,
+#3033,
+#3033,
+
+115,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_left_up5[1] = [
+
+131,
+#3303,
+#3303,
+
+139,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_left_up6[1] = [
+
+155,
+#3330,
+#3330,
+
+163,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_left_up7[1] = [
+
+187,
+#0333,
+#0333,
+
+195,
+#0333,
+#0333,
+
+255 // Endekennung
+]
+
+byte array pupils_left1[1] = [
+12,
+#0333,
+#0333,
+
+28,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_left2[1] = [
+
+52,
+#3033,
+#3033,
+
+68,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_left3[1] = [
+
+84,
+#0333,
+#0333,
+
+92,
+#0333,
+#0333,
+255 // Endekennung
+]
+
+byte array pupils_left4[1] = [
+
+108,
+#3033,
+#3033,
+
+116,
+#3033,
+#3033,
+255 // Endekennung
+]
+
+byte array pupils_left5[1] = [
+
+132,
+#3303,
+#3303,
+
+140,
+#3303,
+#3303,
+255 // Endekennung
+]
+
+byte array pupils_left6[1] = [
+
+156,
+#3330,
+#3330,
+
+164,
+#3330,
+#3330,
+255 // Endekennung
+]
+
+byte array pupils_left7[1] = [
+
+188,
+#0333,
+#0333,
+
+196,
+#0333,
+#0333,
+
+255 // Endekennung
+]
+
+byte array pupils_left_down1[1] = [
+13,
+#0333,
+#0333,
+
+29,
+#0333,
+#0333,
+255 // Endekennung
+]
+byte array pupils_left_down2[1] = [
+
+53,
+#3033,
+#3033,
+
+69,
+#3033,
+#3033,
+255 // Endekennung
+]
+byte array pupils_left_down3[1] = [
+
+85,
+#0333,
+#0333,
+
+93,
+#0333,
+#0333,
+255 // Endekennung
+]
+byte array pupils_left_down4[1] = [
+
+109,
+#3033,
+#3033,
+
+117,
+#3033,
+#3033,
+255 // Endekennung
+]
+byte array pupils_left_down5[1] = [
+
+133,
+#3303,
+#3303,
+
+141,
+#3303,
+#3303,
+255 // Endekennung
+]
+byte array pupils_left_down6[1] = [
+
+157,
+#3330,
+#3330,
+
+165,
+#3330,
+#3330,
+255 // Endekennung
+]
+byte array pupils_left_down7[1] = [
+
+189,
+#0333,
+#0333,
+
+197,
+#0333,
+#0333,
+
+255 // Endekennung
+]
+
+byte array pupils_down1[1] = [
+14,
+#3033,
+#3033,
+
+30,
+#3033,
+#3033,
+
+255 // Endekennung
+]
+
+byte array pupils_down2[1] = [
+54,
+#3303,
+#3303,
+
+70,
+#3303,
+#3303,
+
+255 // Endekennung
+]
+byte array pupils_down3[1] = [
+86,
+#3033,
+#3033,
+
+94,
+#3033,
+#3033,
+
+255 // Endekennung
+]
+byte array pupils_down4[1] = [
+
+110,
+#3303,
+#3303,
+
+118,
+#3303,
+#3303,
+
+255 // Endekennung
+]
+byte array pupils_down5[1] = [
+
+134,
+#3330,
+#3330,
+
+142,
+#3330,
+#3330,
+
+255 // Endekennung
+]
+byte array pupils_down6[1] = [
+
+166,
+#0333,
+#0333,
+
+174,
+#0333,
+#0333,
+
+255 // Endekennung
+]
+byte array pupils_down7[1] = [
+
+190,
+#3033,
+#3033,
+
+198,
+#3033,
+#3033,
+
+255 // Endekennung
+]
+
+word array pupils[1] = [
+  pupils_up1,
+  pupils_up2,
+  pupils_up3,
+  pupils_up4,
+  pupils_up5,
+  pupils_up6,
+  pupils_up7,
+  0,
+  pupils_right_up1,
+  pupils_right_up2,
+  pupils_right_up3,
+  pupils_right_up4,
+  pupils_right_up5,
+  pupils_right_up6,
+  pupils_right_up7,
+  0,
+  pupils_right1,
+  pupils_right2,
+  pupils_right3,
+  pupils_right4,
+  pupils_right5,
+  pupils_right6,
+  pupils_right7,
+  0,
+  pupils_right_down1,
+  pupils_right_down2,
+  pupils_right_down3,
+  pupils_right_down4,
+  pupils_right_down5,
+  pupils_right_down6,
+  pupils_right_down7,
+  0,
+  pupils_down1,
+  pupils_down2,
+  pupils_down3,
+  pupils_down4,
+  pupils_down5,
+  pupils_down6,
+  pupils_down7,
+  0,
+  pupils_left_down1,
+  pupils_left_down2,
+  pupils_left_down3,
+  pupils_left_down4,
+  pupils_left_down5,
+  pupils_left_down6,
+  pupils_left_down7,
+  0,
+  pupils_left1,
+  pupils_left2,
+  pupils_left3,
+  pupils_left4,
+  pupils_left5,
+  pupils_left6,
+  pupils_left7,
+  0,
+  pupils_left_up1,
+  pupils_left_up2,
+  pupils_left_up3,
+  pupils_left_up4,
+  pupils_left_up5,
+  pupils_left_up6,
+  pupils_left_up7,
+  0,
+  pupils_middle1,
+  pupils_middle2,
+  pupils_middle3,
+  pupils_middle4,
+  pupils_middle5,
+  pupils_middle6,
+  pupils_middle7,
+  0
+]
+
+
+byte array ghost_pupils_buffer[1]=[
+//  112, 116, 120, 124
+//  100, 104, 108, 112
+  33, 37, 41, 45
+]

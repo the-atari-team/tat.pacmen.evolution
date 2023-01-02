@@ -1,0 +1,1227 @@
+include cp:cookie
+
+byte xpf,ypf
+byte xp
+byte pad
+byte cookie
+byte i
+
+byte RANDOM = $D20A
+
+const game_screen = @game_screen
+
+// vielfaches von 3    0  3  6  9   12  15  18  21  24  27  30  33  36, 39
+byte array xlist[1] = [1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40 ]
+
+word array ylist[1] = [
+//   0,
+    40,
+//  80,
+// 120,
+   160,
+// 200,
+// 240,
+   280,
+// 320,
+// 360,
+   400,
+// 440,
+// 480,
+   520,
+// 560,
+// 600,
+   640,
+// 680,
+// 720,
+   760,
+// 800,
+// 840,
+   880,
+// 920
+]
+
+byte array pad_e[2] = [49,54]
+byte array pad_x[2] = [50,54]
+byte array pad_t[2] = [51,54]
+byte array pad_r[2] = [52,54]
+byte array pad_a[2] = [53,54]
+
+// Wir zeichnen keine '0' sondern nehmen 32 dafuer
+//byte array pad_cherry[4] = [55,56,57,58]
+//byte array pad_apple[4] = [59,60,61,62]
+//byte array pad_chili[4] = [191,192,193,194]
+//byte array pad_box[4] = [67,68,69,70]
+
+byte array pad_collectible[4] = [76,77,78,79]
+
+byte array pad_nothing[4] = [32,32,32,32]
+byte array pad_cookie_1[4] = [208,209,210,211]
+// byte array pad_cookie_1[4] = [80,81,82,83]
+byte array pad_cookie_2[4] = [84,85,86,87]
+byte array pad_cookie_3[4] = [88,89,90,91]
+byte array pad_cookie_fat[4] = [92,93,94,95]
+byte array pad_cookie_fat_yellow[4] = [220,221,222,223]
+
+word array pads[1] = [
+  pad_nothing,            // 0
+  pad_cookie_1,           // 1
+  pad_cookie_2,
+  pad_cookie_3,
+  pad_cookie_fat,         // 4
+
+  pad_collectible,        // 5 Das collectible wollen wir manipulieren
+
+//  pad_cherry,             // 6
+//  pad_apple,              // 7
+//  pad_chili,             // 8
+//  pad_box
+]
+
+word screen
+word pad_addr
+byte value
+byte color
+
+// Wie die 4 Teile im Speicher liegen (links drall)
+// TODO 0,1,40,41 (Zeilenweise)
+byte array cookiePos[4] = [0,40,1,41]
+
+// setzt einen Cookie vom pad [0,1,2] an Playfield Position x,y
+function @setCookie(xpf, ypf, pad)
+begin
+  screen := ylist[ypf] + game_screen
+  xp := xlist[xpf]
+
+  pad_addr := pads[pad & $7f]
+  color := pad & $80
+
+  cookie := 0
+  if pad == 0 then
+  begin
+    cookie := @getbytearray(screen, xp) // alten Wert auslesen
+  end
+
+  for i:=0 to 3 do
+  begin
+//    value := @getbyte(pad_addr + i)
+    value := @mem[pad_addr + i]
+//    @setbytearray(screen, xp + cookiePos[i], value ! color) // wir setzen (leerzeichen)
+    @mem[cookiePos[i] + screen + xp ] := value ! color // wir setzen (leerzeichen)
+  end
+
+  return cookie
+end
+
+function @getCookie(xpf, ypf)
+begin
+  screen := ylist[ypf] + game_screen
+  xp := xlist[xpf]
+
+  cookie := @mem[screen + xp] // alten Wert auslesen
+  return cookie
+end
+byte array pad_cherry[1] = [
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#.332,
+#3323,
+#3333,
+#233.,
+#323.,
+#.33.,
+#....,
+#....,
+
+#....,
+#....,
+#....,
+#....,
+#....,
+#..22,
+#.222,
+#2.2.,
+
+#..2.,
+#.2..,
+#.23.,
+#3333,
+#3333,
+#2333,
+#3233,
+#.33.,
+]
+
+byte array pad_apple[1] = [
+#....,
+#....,
+#..32,
+#.3.2,
+#3332,
+#3333,
+#3333,
+#3333,
+
+#3333,
+#3333,
+#3333,
+#3333,
+#.333,
+#.333,
+#..3.,
+#....,
+
+#2...,
+#2...,
+#.3..,
+#333.,
+#333.,
+#3333,
+#3333,
+#3323,
+
+#3323,
+#3323,
+#3323,
+#323.,
+#333.,
+#33..,
+#3...,
+#....,
+]
+
+byte array pad_chili[1] = [
+// ......2.
+// ......2.
+// .....2..
+// ......3.
+// .....333
+// .....333
+// ....33.3
+// ....3333
+// ....33.3
+// ....333.
+// ...3.33.
+// ..3.333.
+// .3.333..
+// 333333..
+// 33333...
+// .333....
+
+
+// item: 63  Banane [63,64,65,66]
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+#....,
+
+#....,
+#....,
+#...3,
+#..3.,
+#.3.3,
+#3333,
+#3333,
+#.333,
+
+#..2.,
+#..2.,
+#.2..,
+#..3.,
+#.333,
+#.333,
+#33.3,
+#3333,
+
+#33.3,
+#333.,
+#.33.,
+#333.,
+#33..,
+#33..,
+#3...,
+#....,
+
+]
+
+byte array pad_heart[1] = [
+#....,
+#....,
+#....,
+#.23.,
+#2332,
+#2332,
+#3333,
+#3333,
+
+#.333,
+#.333,
+#..33,
+#..33,
+#...3,
+#...3,
+#....,
+#....,
+
+#....,
+#....,
+#....,
+#23..,
+#333.,
+#333.,
+#333.,
+#333.,
+
+#33..,
+#33..,
+#3...,
+#3...,
+#....,
+#....,
+#....,
+#....
+
+]
+
+byte array pad_broken_heart[1] = [
+
+#....,
+#....,
+#....,
+#.23.,
+#233.,
+#23.3,
+#33.3,
+#33..,
+
+#.333,
+#.333,
+#..33,
+#..33,
+#....,
+#....,
+#....,
+#....,
+
+#....,
+#....,
+#....,
+#.23.,
+#2333,
+#2333,
+#3333,
+#3333,
+
+#..3.,
+#3.3.,
+#.3..,
+#.3..,
+#3...,
+#3...,
+#....,
+#....
+
+]
+
+byte array pad_extra_e[1] = [
+#....,
+#....,
+#..23,
+#.233,
+#.2..,
+#.3.3,
+#.3.3,
+#.3..,
+
+// item: 51
+#.3.3,
+#.3.3,
+#.3..,
+#.333,
+#..33,
+#....,
+#....,
+#....,
+
+// item: 52
+#....,
+#....,
+#3...,
+#33..,
+#.3..,
+#33..,
+#33..,
+#33..,
+
+// item: 53
+#33..,
+#33..,
+#.3..,
+#33..,
+#3...,
+#....,
+#....,
+#....,
+]
+
+byte array pad_extra_x[1] = [
+#....,
+#....,
+#..23,
+#.233,
+#.2.3,
+#.3.3,
+#.3..,
+#.33.,
+
+// item: 59
+#.3..,
+#.3.3,
+#.3.3,
+#.333,
+#..33,
+#....,
+#....,
+#....,
+
+// item: 60
+#....,
+#....,
+#3...,
+#33..,
+#.3..,
+#.3..,
+#.3..,
+#33..,
+
+// item: 61
+#.3..,
+#.3..,
+#.3..,
+#33..,
+#3...,
+#....,
+#....,
+#....,
+]
+
+byte array pad_extra_t[1] = [
+#....,
+#....,
+#..23,
+#.233,
+#.2..,
+#.33.,
+#.33.,
+#.33.,
+
+// item: 67
+#.33.,
+#.33.,
+#.33.,
+#.333,
+#..33,
+#....,
+#....,
+#....,
+
+// item: 68
+#....,
+#....,
+#3...,
+#33..,
+#.3..,
+#33..,
+#33..,
+#33..,
+
+// item: 69
+#33..,
+#33..,
+#33..,
+#33..,
+#3...,
+#....,
+#....,
+#....,
+]
+
+byte array pad_extra_r[1] = [
+#....,
+#....,
+#..23,
+#.233,
+#.2..,
+#.3.3,
+#.3.3,
+#.3..,
+
+// item: 63
+#.3.3,
+#.3.3,
+#.3.3,
+#.333,
+#..33,
+#....,
+#....,
+#....,
+
+// item: 64
+#....,
+#....,
+#3...,
+#33..,
+#33..,
+#.3..,
+#.3..,
+#33..,
+
+// item: 65
+#.3..,
+#.3..,
+#.3..,
+#33..,
+#3...,
+#....,
+#....,
+#....,
+]
+
+byte array pad_extra_a[1] = [
+#....,
+#....,
+#..23,
+#.233,
+#.23.,
+#.3.3,
+#.3.3,
+#.3.3,
+
+// item: 55
+#.3..,
+#.3.3,
+#.3.3,
+#.333,
+#..33,
+#....,
+#....,
+#....,
+
+// item: 56
+#....,
+#....,
+#3...,
+#33..,
+#33..,
+#.3..,
+#.3..,
+#.3..,
+
+// item: 57
+#.3..,
+#.3..,
+#.3..,
+#33..,
+#3...,
+#....,
+#....,
+#....,
+]
+
+//byte array pad_x5[1] = [
+//#....,
+//#..22,
+//#..23,
+//#..23,
+//#..33,
+//#..33,
+//#..33,
+//#..33,
+//
+//// item: 89
+//#....,
+//#2.2.,
+//#121.,
+//#212.,
+//#1.1.,
+//#....,
+//#..33,
+//#...3,
+//
+//// item: 90
+//#....,
+//#3333,
+//#3333,
+//#....,
+//#....,
+//#....,
+//#....,
+//#333.,
+//
+//// item: 91
+//#..33,
+//#..33,
+//#..33,
+//#..33,
+//#..33,
+//#..33,
+//#..32,
+//#332.,
+//]
+
+//byte array pad_x2[1] = [
+//#....,
+//#..23,
+//#.23.,
+//#.33.,
+//#....,
+//#....,
+//#2.2.,
+//#121.,
+//
+//// item: 93
+//#212.,
+//#1.13,
+//#...3,
+//#..23,
+//#..33,
+//#.23.,
+//#.23.,
+//#.333,
+//
+//// item: 94
+//#....,
+//#333.,
+//#..33,
+//#..33,
+//#..33,
+//#..33,
+//#.33.,
+//#.33.,
+//
+//// item: 95
+//#33..,
+//#33..,
+//#3...,
+//#....,
+//#....,
+//#....,
+//#....,
+//#3333,
+//]
+
+byte array pad_highspeed_pacmen[1] = [
+#....,
+#....,
+#....,
+#....,
+#.333,
+#3333,
+#3.33,
+#3333,
+
+// item: 81
+#..33,
+#3333,
+#3333,
+#.333,
+#....,
+#....,
+#....,
+#....,
+
+// item: 82
+#....,
+#....,
+#....,
+#....,
+#.111,
+#3...,
+#3.11,
+#3...,
+
+// item: 83
+#3.11,
+#3...,
+#3111,
+#....,
+#....,
+#....,
+#....,
+#....,
+]
+
+byte array pad_bomb[1] = [
+#....,
+#....,
+#...2,
+#...2,
+#..1.,
+#..11,
+#.121,
+#.211,
+
+// item: 97
+#1211,
+#1111,
+#1111,
+#1111,
+#1111,
+#.111,
+#.11.,
+#..11,
+
+// item: 98
+#..3.,
+#2323,
+#..3.,
+#....,
+#1...,
+#1...,
+#11..,
+#11..,
+
+// item: 99
+#111.,
+#111.,
+#111.,
+#1.1.,
+#1.1.,
+#.1..,
+#.1..,
+#1...,
+]
+
+//byte array pad_bottle[1] = [
+//  #....,
+//  #....,
+//  #....,
+//  #...2,
+//  #..23,
+//  #...2,
+//  #...2,
+//  #..2.,
+//
+//  // item: 55
+//  #..2.,
+//  #.212,
+//  #.212,
+//  #.211,
+//  #.211,
+//  #.211,
+//  #..22,
+//  #....,
+//
+//  // item: 56
+//  #....,
+//  #....,
+//  #....,
+//  #2...,
+//  #32..,
+//  #2...,
+//  #2...,
+//  #.2..,
+//
+//  // item: 57
+//  #.2..,
+//  #.12.,
+//  #.12.,
+//  #112.,
+//  #112.,
+//  #112.,
+//  #22..,
+//  #....,
+//
+//]
+
+//byte array pad_sword[1] = [
+//  #....,
+//  #....,
+//  #....,
+//  #....,
+//  #....,
+//  #....,
+//  #...3,
+//  #...3,
+//
+//  // item: 59
+//  #.213,
+//  #.21.,
+//  #..21,
+//  #..21,
+//  #.2.2,
+//  #.2.2,
+//  #2...,
+//  #2...,
+//
+//  // item: 60
+//  #..33,
+//  #..33,
+//  #.333,
+//  #.3.3,
+//  #333.,
+//  #3.3.,
+//  #33..,
+//  #.3..,
+//
+//  // item: 61
+//  #3...,
+//  #3...,
+//  #....,
+//  #....,
+//  #....,
+//  #....,
+//  #....,
+//  #....,
+//
+//]
+
+//byte array pad_skull[1] = [
+//  #....,
+//  #....,
+//  #....,
+//  #.222,
+//  #.222,
+//  #2222,
+//  #2222,
+//  #22..,
+//
+//  // item: 51
+//  #22..,
+//  #22..,
+//  #.222,
+//  #.222,
+//  #..22,
+//  #..22,
+//  #..2.,
+//  #..2.,
+//
+//  // item: 52
+//  #....,
+//  #....,
+//  #....,
+//  #22..,
+//  #222.,
+//  #222.,
+//  #222.,
+//  #2..1,
+//
+//  // item: 53
+//  #2..1,
+//  #2..1,
+//  #.22.,
+//  #.22.,
+//  #222.,
+//  #222.,
+//  #2.2.,
+//  #2.2.,
+//]
+
+byte array pad_banana[1] = [
+ #....,
+ #....,
+ #....,
+ #....,
+ #....,
+ #..3.,
+ #.322,
+ #.232,
+
+ // item: 53
+ #23.3,
+ #3...,
+ #...3,
+ #..3.,
+ #23.3,
+ #3333,
+ #.333,
+ #..33,
+
+ // item: 54
+ #....,
+ #....,
+ #2...,
+ #22..,
+ #22..,
+ #22..,
+ #22..,
+ #222.,
+
+ // item: 55
+ #3232,
+ #3323,
+ #.323,
+ #33.2,
+ #33..,
+ #33..,
+ #3...,
+ #....,
+]
+
+byte array pad_cake[1] = [
+ #....,
+ #...2,
+ #..21,
+ #..11,
+ #..21,
+ #.222,
+ #2222,
+ #2233,
+
+ // item: 57
+ #3333,
+ #3322,
+ #2222,
+ #2233,
+ #3333,
+ #3322,
+ #2222,
+ #22..,
+
+ // item: 58
+ #....,
+ #....,
+ #122.,
+ #1122,
+ #1222,
+ #2232,
+ #3332,
+ #3322,
+
+ // item: 59
+ #2222,
+ #2232,
+ #3332,
+ #3322,
+ #2222,
+ #22..,
+ #....,
+ #....,
+]
+
+byte array pad_fried_egg[1] = [
+ #....,
+ #..22,
+ #.222,
+ #.222,
+ #.222,
+ #2223,
+ #2233,
+ #2232,
+
+ // item: 61
+ #2232,
+ #.233,
+ #.223,
+ #2222,
+ #2222,
+ #.222,
+ #..22,
+ #....,
+
+ // item: 62
+ #....,
+ #2...,
+ #222.,
+ #2222,
+ #2222,
+ #3222,
+ #2322,
+ #3322,
+
+ // item: 63
+ #332.,
+ #3322,
+ #3222,
+ #2222,
+ #222.,
+ #2...,
+ #....,
+ #....,
+]
+
+//byte array pad_smilie[1] = [
+// #....,
+// #..22,
+// #.233,
+// #.333,
+// #23.3,
+// #23.3,
+// #23.3,
+// #3333,
+//
+// // item: 65
+// #3333,
+// #3.33,
+// #3.33,
+// #33.3,
+// #.33.,
+// #.333,
+// #..32,
+// #....,
+//
+// // item: 66
+// #....,
+// #33..,
+// #333.,
+// #333.,
+// #3.33,
+// #3.33,
+// #3.33,
+// #3333,
+//
+// // item: 67
+// #3333,
+// #33.3,
+// #33.2,
+// #3.32,
+// #.33.,
+// #332.,
+// #22..,
+// #....,
+//
+//]
+
+//byte array pad_blitz[1] = [
+// #....,
+// #....,
+// #....,
+// #...3,
+// #..32,
+// #.322,
+// #3223,
+// #3222,
+//
+// // item: 77
+// #.332,
+// #...3,
+// #...3,
+// #...3,
+// #..32,
+// #..33,
+// #.33.,
+// #.3..,
+//
+// // item: 78
+// #..3.,
+// #.33.,
+// #33..,
+// #23..,
+// #3...,
+// #3...,
+// #3...,
+// #233.,
+//
+// // item: 79
+// #2223,
+// #3223,
+// #223.,
+// #23..,
+// #3...,
+// #....,
+// #....,
+// #....,
+//
+//]
+
+//byte array pad_moon[1] = [
+// #.333,
+// #...3,
+// #....,
+// #....,
+// #....,
+// #....,
+// #....,
+// #....,
+//
+// // item: 89
+// #....,
+// #....,
+// #....,
+// #....,
+// #....,
+// #....,
+// #...3,
+// #.333,
+//
+// // item: 90
+// #....,
+// #33..,
+// #333.,
+// #333.,
+// #.333,
+// #.333,
+// #.333,
+// #.333,
+//
+// // item: 91
+// #.333,
+// #.333,
+// #.333,
+// #.333,
+// #333.,
+// #333.,
+// #33..,
+// #....,
+//]
+
+word array collectibles[1] = [
+  0,0,                   // Da wir ein Shuffle verwenden wollen, darf es kein element[0] geben
+  pad_extra_e,$0080,     // 2
+  pad_extra_x,$0000,
+  pad_extra_t,$0080,
+  pad_extra_r,$0000,
+  pad_extra_a,$0080,
+
+  pad_cherry,$0000,       // 12
+  pad_apple,$0000,        // 14
+  pad_chili,$0000,        // 16
+  pad_heart,$0000,        // 18
+  pad_broken_heart,$0000, // 20
+  pad_cake,$0000,         // 22 (Kuchen)
+  pad_banana,$0080,       // 24
+  pad_bomb,$0000,         // 26
+  pad_highspeed_pacmen,$0080, // 28
+  pad_fried_egg,$0080,    // 30
+
+// due to memory outage, removed
+//  pad_blitz,$0080,
+
+//  pad_x5,$0000,
+//  pad_x2,$0000,
+//  pad_bottle,$0000,
+//  pad_skull,$0000,
+//  pad_smilie,$0080,
+//  pad_moon,$0080,
+  $ffff,$ffff
+]
+
+byte array extraCollectible[7]
+
+procedure @initExtraCollectible()
+begin
+  @init_shuffle(adr:extraCollectible, 5) // Anzahl, array muss Anzahl+2 sein!
+
+  @shuffle_add(adr:extraCollectible, 2)  // e
+  @shuffle_add(adr:extraCollectible, 4)  // x
+  @shuffle_add(adr:extraCollectible, 6)  // t
+  @shuffle_add(adr:extraCollectible, 8)  // r
+  @shuffle_add(adr:extraCollectible, 10) // a
+  @shuffle(adr:extraCollectible)
+end
+
+procedure @removeExtraCollectible()
+begin
+  @shuffle_remove(adr:extraCollectible)
+end
+
+byte array levelCollectible[12]
+
+procedure @initLevelCollectible()
+begin
+  @init_shuffle(adr:levelCollectible, 10) // Anzahl, array muss Anzahl+2 sein!
+
+  @shuffle_add(adr:levelCollectible, 12) // cherry
+  @shuffle_add(adr:levelCollectible, 14) // apple
+  @shuffle_add(adr:levelCollectible, 16) // chili
+  @shuffle_add(adr:levelCollectible, 18) // heart
+  @shuffle_add(adr:levelCollectible, 20) // broken_heart
+  @shuffle_add(adr:levelCollectible, 22) // cake // TODO: Sahnehaeupchen ;-)
+  @shuffle_add(adr:levelCollectible, 24) // banana
+  @shuffle_add(adr:levelCollectible, 26) // bomb
+  @shuffle_add(adr:levelCollectible, 28) // high_speed_pacmen
+  @shuffle_add(adr:levelCollectible, 30) // fried_egg
+  @shuffle(adr:levelCollectible)
+end
+
+procedure @removeLevelCollectible()
+begin
+  @shuffle_remove(adr:levelCollectible)
+end
+
+word value_addr
+
+function @isExtra(value)
+begin
+  value_addr := collectibles[value]
+
+  if value_addr == adr:pad_extra_e then
+    return $1  // 49 54
+  else if value_addr == adr:pad_extra_x then
+    return $2  // 50 54
+  else if value_addr == adr:pad_extra_t then
+    return $3  // 51 54
+  else if value_addr == adr:pad_extra_r then
+    return $4  // 52 54
+  else if value_addr == adr:pad_extra_a then
+    return $5  // 53 54
+
+  return 0
+end
+
+function @isProgressable(value)
+begin
+  value_addr := collectibles[value]
+
+  if value_addr == adr:pad_bomb then
+    return 1
+  else if value_addr == adr:pad_highspeed_pacmen then
+    return 2
+  else if value_addr == adr:pad_cake then
+    return 3
+
+  return 0
+end
+
+function @nextCollectible()
+begin
+
+  value := 0
+  if game_difficult == 10 then
+  begin
+    // New difficult Bomb-man to kill the ghosts, you need the bomb
+    value := 26
+  end
+  else
+  if RANDOM > 85 then  // 85 == ~30% TODO: Level abhaengig machen, wie haeufig EXTRA kommt
+  begin
+    value := @shuffle_get(adr:levelCollectible)
+//    if value > 22 or value < 12 then
+//    begin
+//      value := 0
+//    end
+  end
+
+  if value == 0 then // EXTRA nur einblenden, wenn der erste get eine 0 lieferte
+  begin
+    value := @shuffle_get(adr:extraCollectible)
+  end
+  return value
+  // so sollten uns die currentCollectibles nie ausgehen, falls doch,
+  // sollte ein Extra Level eingeblendet werden.
+  // Dann geht der Spass wieder von vorne los.
+end
+
+function @copy_PadData_in_Charset(cookie)
+begin
+  pad_addr := collectibles[cookie]
+
+  @move(pad_addr, $b260, 32)
+//  for i:=0 to 31 do
+//  begin
+//    value := @getbyte(pad_addr + i)
+//    @setByte($B260 + i, value)       // TODO: $B000 + 76 * 8 (start collectible)
+//  end
+  // wir geben den 2. Wert innerhalb collectibles zurueck, das ist die Farbe
+  return collectibles[cookie + 1]
+end

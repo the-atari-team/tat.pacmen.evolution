@@ -1,0 +1,58 @@
+// Hier stehen Konstanten und Variablen, die ueberall sichtbar sein sollen
+const CHASE = 1
+const SCATTER = 2
+const ANGST = 3
+const AUGEN = 4
+
+const EXACT_POSITION = 1
+const FRONT_POSITION = 2
+const DIAGONAL_POSITION = 3
+const CIRCLE_POSITION = 4
+
+const SPEED_50=2
+const SPEED_66=3
+const SPEED_75=4
+const SPEED_80=5
+const SPEED_85=7
+const SPEED_90=10
+const SPEED_95=21
+const SPEED_98=50
+
+const MODE_INTRO=1
+const MODE_PLAY=2
+const MODE_GAME_OVER=3
+const MODE_ABBRUCH=4     // ESC pressed
+const MODE_PACMEN_LOST_LIVE=5
+
+byte game_mode = @game_mode
+
+const game_DIFFICULT_start=1 // easy-peasy
+const max_game_difficult = 10
+const max_game_level = 15    // PLAYSA-PLAYSO
+
+byte game_difficult = @game_difficult // difficult
+
+const game_start = 1
+
+byte game_level = @game_level         // level to load from disk/RAM 1 to 11
+byte player_lives = @player_lives     // count of pacmens at start
+
+
+byte newCollectiblePossible = @newCollectiblePossible
+word newCollectibleCountdown = @newCollectibleCountdown
+word newCollectibleWaitfor = @newCollectibleWaitfor
+byte currentCollectible = @currentCollectible
+byte eatenCollectible = @eatenCollectible
+
+const up=   %00000001  // Verschaltung im Uhrzeigersinn
+const right=%00000010
+const down= %00000100
+const left= %00001000
+const guilty = %10000000
+
+const pacmen_canal = 0
+const ghost_canal = 1
+const augen_canal = 2
+const tic_toc_canal = 3
+
+byte debug = @debug

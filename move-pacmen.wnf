@@ -1,0 +1,477 @@
+include mp:pacmove
+
+
+// DONE: Trennung zwischen bewegen und zeichnen durchfuehren
+
+byte pacmen_start_x = @pacmen_start_x
+byte pacmen_start_y = @pacmen_start_y
+
+byte pacmenx = @pacmenx
+byte pacmeny = @pacmeny
+
+byte pacmen_direction = @pacmen_direction
+
+// Der Pacmen bewegt sich auf einem Feld der Groesse 13x7 (=91)
+byte array playfield[91] = @playfield
+
+byte pacmenx_step, pacmeny_step
+word pacmen_animation = @pacmen_animation
+byte pacmen_animation_number = @pacmen_animation_number
+
+byte array PMM[1] = $B300     // $b000 + 768 Missiles an dieser Stelle
+
+byte i
+
+byte waitcount
+byte waitfor = @pacmen_waitfor
+
+const ANGST_COLOR=$84
+
+// Initialisiert den Pacmen, zeichnet diesen aber nicht
+procedure @init_pacmen()
+begin
+  pacmenx := pacmen_start_x
+  pacmeny := pacmen_start_y
+
+  pacmenx_step := 0
+  pacmeny_step := 0
+
+  pacmen_direction := 0
+
+  pacmen_animation := adr:@LEFT_MAN_ANIMATION
+  pacmen_animation_number := 0
+  @clearbyte(adr:pmm, 255)
+
+  // Stotterbremse
+  waitcount := 0
+  waitfor := @getPacmenSpeed(game_level)
+
+//  @copypacmen(adr:pmm, pacmenx, pacmeny, pacmen_animation, pacmen_animation_number)
+
+//  startline := game_screen
+//  for i:=0 to 20 do
+//  begin
+//    screenline[i] := startline
+//    startline := startline + 40
+//  end
+end
+
+byte pacmen_in_animation
+
+// Bewegt Pacmen in die gewuenschte Richtung, diese ist durch pacmen_direction vorgegeben
+procedure move_direction()
+begin
+  if pacmen_direction & left == left then // Richtung left
+  begin
+    pacmenx := pacmenx - pacmenx_step
+    pacmen_in_animation := 1
+    if pacmenx < 2 then           // Sonderfall: links raus
+    begin
+      pacmenx := 153
+    end
+  end
+  else if pacmen_direction & right == right then // Richtung rechts
+  begin
+    pacmenx := pacmenx + pacmenx_step
+    pacmen_in_animation := 1
+    if pacmenx > 153 then         // Sonderfall: rechts raus
+    begin
+      pacmenx := 2
+    end
+  end
+
+  else if pacmen_direction & up == up then // Richtung up
+  begin
+    pacmeny := pacmeny - pacmeny_step
+    pacmen_in_animation := 1
+  end
+
+  else if pacmen_direction & down == down then // Richtung down
+  begin
+    pacmeny := pacmeny + pacmeny_step
+    pacmen_in_animation := 1
+  end
+end
+
+byte wished_direction
+byte count_left
+byte count_right
+byte count_up
+byte count_down
+byte keycode
+
+byte ch=764
+
+
+//
+//    OO                        OO    OO         OO
+//                              OO               OO
+//    OO  OOOO  OO  OO  OOOO  OOOOOO OOO   OOOO  OO  OO
+//    OO OO  OO OO  OO OO       OO    OO  OO  OO OO OO
+//    OO OO  OO OO  OO  OOOO    OO    OO  OO     OOOOO
+//    OO OO  OO  OOOOO     OO   OO    OO  OO  OO OO  OO
+//    OO  OOOO      OO  OOOO     OOO OOOO  OOOO  OO   OO
+// OOOO         OOOOO
+//
+// fragt den Joystick aus, in welche Richtig sich Pacmen bewegen soll
+// zusaetzlich wird die Tastatur befragt
+function @getWishedDirection()
+local wished_direction
+begin
+  wished_direction := 0
+
+  keycode := ch
+
+//  @printf('keycode: %d\n', keycode)
+//  @pause(50)
+
+  if @stickLeft(0) == 1 or keycode == 134 then  // 134=ctrl +
+  begin
+    wished_direction := left
+    count_left := count_left + 1
+  end
+  else
+    count_left := 0
+
+  if @stickRight(0) == 1 or keycode==135 then  // 135 = ctrl *
+  begin
+    wished_direction := wished_direction ! right
+    count_right := count_right + 1
+  end
+  else
+    count_right := 0
+
+  if @stickUp(0) == 1 or keycode==142 then    // 142 = ctrl -
+  begin
+    wished_direction := wished_direction ! up
+    count_up := count_up + 1
+  end
+  else
+    count_up := 0
+
+  if @stickDown(0) == 1 or keycode==143 then // 143 = ctrl =
+  begin
+    wished_direction := wished_direction ! down
+    count_down := count_down + 1
+  end
+  else
+    count_down := 0
+
+  if keycode == 28 then game_mode := MODE_ABBRUCH
+
+  if keycode != 255 then
+  begin
+    ch:=255
+  end
+
+  return wished_direction
+end
+
+// Hilfsfunktion, in welche Richtung sich Pacmen demnaechst bewegen soll.
+// alle noetigen Variablen werden gesetzt auch die Animationspointer werden gesetzt
+procedure @init_pacmen_move_left()
+begin
+  pacmenx_step := 1
+  pacmeny_step := 0
+  pacmen_animation := adr:@LEFT_MAN_ANIMATION
+  pacmen_direction := left
+end
+
+procedure @init_pacmen_move_right()
+begin
+  pacmenx_step := 1
+  pacmeny_step := 0
+  pacmen_animation := adr:@RIGHT_MAN_ANIMATION
+  pacmen_direction := right
+end
+
+procedure @init_pacmen_move_up()
+begin
+  pacmenx_step := 0
+  pacmeny_step := 2
+  pacmen_animation := adr:@UP_MAN_ANIMATION
+  pacmen_direction := up
+end
+
+procedure @init_pacmen_move_down()
+begin
+  pacmenx_step := 0
+  pacmeny_step := 2
+  pacmen_animation := adr:@DOWN_MAN_ANIMATION
+  pacmen_direction := down
+end
+
+
+byte go_left
+byte go_right
+byte go_up
+byte go_down
+
+byte pacmen_xy_pf = @pacmen_xy_pf
+
+byte possible_direction
+
+byte xpf = @pacmen_x_pf
+byte ypf = @pacmen_y_pf
+
+byte countOfCookies = @countOfCookies
+byte oldcookie
+byte oldCookieAnd7F
+
+word movehandle
+
+byte array ghost_mode_countdown[4] = @ghost_mode_countdown
+byte array ghost_mode[4] = @ghost_mode
+byte array ghost_waitfor[4] = @ghost_waitfor
+byte array PCOLR[4]=704 // Schatten von 53266-9
+
+byte ghost_killed_for_score_index = @ghost_killed_for_score_index
+//
+//
+//
+// OOO OO   OOOO  OO   OO  OOOO        OOOOO   OOOOO  OOOO  OOO OO   OOOOO OOOOO
+// OOOOOOO OO  OO OO   OO OO  OO       OO  OO OO  OO OO  OO OOOOOOO OO  OO OO  OO
+// OO O OO OO  OO OO   OO OOOOOO       OO  OO OO  OO OO     OO O OO OO  OO OO  OO
+// OO O OO OO  OO  OO OO  OO           OOOOO  OO  OO OO  OO OO O OO OO  OO OO  OO
+// OO O OO  OOOO    OOO    OOOO        OO      OOOOO  OOOO  OO O OO  OOOOO OO  OO
+//                                     OO
+//
+// bewegt Pacmen in die vorgesehene Richtung, Stotterbremse wird hier verwendet
+// sollten wie an einer ungeraden Stelle stehen, wird Pacmen einfach weiterbewegt,
+// bis eine gerade Stelle erreicht wurde.
+procedure @move_pacmen(movehandle)
+begin
+  waitcount := waitcount + 1     // Stotterbremse
+  if waitcount >= waitfor then
+  begin
+    waitcount := 0
+    return 0
+  end
+
+  pacmen_xy_pf := @getPlayfieldXY(pacmenx, pacmeny)
+  // Test ob Ergebnis gueltig, sonst nehmen wir die alte Richtung
+  if pacmen_xy_pf == 255 then
+  begin
+    move_direction()
+    return 0
+  end
+
+
+  possible_direction := playfield[pacmen_xy_pf]
+
+  xpf := @getPlayfieldX(pacmenx)
+  ypf := @getPlayfieldY(pacmeny)
+
+  oldcookie := @getCookie(xpf, ypf)
+  if oldcookie > 54 and oldcookie < 224 then
+  begin
+    oldCookieAnd7F := oldcookie & $7f
+    if oldCookieAnd7F == 80 then // normaler Bullet
+    begin
+      countOfCookies := countOfCookies - 1
+      @add_current_score($10)
+      @audio_play_pacmen_canal(1)
+    end
+    else if oldCookieAnd7F == 84 then // normaler Bullet
+    begin
+      countOfCookies := countOfCookies - 1
+      @add_current_score($20)
+      @audio_play_pacmen_canal(1)
+    end
+    else if oldCookieAnd7F == 88 then // normaler Bullet
+    begin
+      countOfCookies := countOfCookies - 1
+      @add_current_score($30)
+      @audio_play_pacmen_canal(1)
+    end
+    else if oldCookieAnd7F == 92 then // fat Bullet
+    begin
+      // Pacmen hat einen Sondercookie (Big Fat) gefuttert
+      // Geister in ANGST
+      ghost_killed_for_score_index := 0
+
+      @audio_play_pacmen_canal(6)
+      @ghosts_in_angst()
+      @add_current_score($50)
+      countOfCookies := countOfCookies - 1
+    end
+    else if oldCookieAnd7F == 76 then // Collectible
+    begin
+      eatenCollectible := 1
+      @audio_play_pacmen_canal(7)
+      // @add_current_score($101) Das passiert spaeter, EXTRA gibt keine Punkte
+    end
+
+    @setCookie(xpf, ypf, 0)
+  end
+
+  // wir befinden uns an einer geraden manipulierbaren Position
+  wished_direction := @(movehandle)()
+
+  if wished_direction == 0 then
+  begin
+    // full stop
+    pacmenx_step := 0
+    pacmeny_step := 0
+    pacmen_direction := 0
+    return 0
+  end
+
+  // @printf('wished: %d current: %d\n', wished_direction, pacmen_direction)
+  if wished_direction == pacmen_direction then
+  begin
+    // wir tun nichts, die gewuenschte Richtung ist die aktuelle Richtung
+    if possible_direction & pacmen_direction == 0 then
+    begin
+      // wir koennen uns in die gewuenschte Richtung nicht mehr bewegen
+      pacmenx_step := 0
+      pacmeny_step := 0
+      pacmen_direction := 0
+      return 0
+    end
+
+    move_direction()
+    return 0
+  end
+
+  go_left := 0
+  go_right := 0
+  go_up := 0
+  go_down := 0
+
+  // Richtungswechsel
+  if wished_direction & left == left and possible_direction & left == left then // Richtung left
+  begin
+    go_left := 1
+  end
+
+  if wished_direction & right == right and possible_direction & right == right then // Richtung right
+  begin
+    go_right := 1
+    @init_pacmen_move_right()
+    move_direction()
+    return 0
+  end
+
+  if wished_direction & up == up and possible_direction & up == up then // Richtung up
+  begin
+    go_up := 1
+  end
+
+  if wished_direction & down == down and possible_direction & down == down then // Richtung down
+  begin
+    go_down := 1
+    @init_pacmen_move_down()
+    move_direction()
+    return 0
+  end
+
+  if go_left == 1 and go_up == 1 then
+  begin
+    if count_left <= count_up then
+    begin
+      @init_pacmen_move_left()
+    end
+    else
+    begin
+      @init_pacmen_move_up()
+    end
+    move_direction()
+    return 0
+  end
+
+  if go_left == 1 and go_down == 1 then
+  begin
+    if count_left <= count_down then
+    begin
+      @init_pacmen_move_left()
+    end
+    else
+    begin
+      @init_pacmen_move_down()
+    end
+    move_direction()
+    return 0
+  end
+
+  if go_right == 1 and go_up == 1 then
+  begin
+    if count_right <= count_up then
+    begin
+      @init_pacmen_move_right()
+    end
+    else
+    begin
+      @init_pacmen_move_up()
+    end
+    move_direction()
+    return 0
+  end
+
+  if go_right == 1 and go_down == 1 then
+  begin
+    if count_right <= count_down then
+    begin
+      @init_pacmen_move_right()
+    end
+    else
+    begin
+      @init_pacmen_move_down()
+    end
+    move_direction()
+    return 0
+  end
+
+  if go_left==1 then
+  begin
+    @init_pacmen_move_left()
+    move_direction()
+  end
+  if go_right==1 then
+  begin
+    @init_pacmen_move_right()
+    move_direction()
+  end
+  if go_up==1 then
+  begin
+    @init_pacmen_move_up()
+    move_direction()
+  end
+  if go_down==1 then
+  begin
+    @init_pacmen_move_down()
+    move_direction()
+  end
+
+end
+
+word mark
+
+procedure @setAndAnimatePacmen()
+begin
+  if pacmen_in_animation == 1 then
+  begin
+    // DONE: This function call is too expensive!
+    // @copypacmen(adr:pmm, pacmenx, pacmeny, pacmen_animation, pacmen_animation_number)
+    @draw_pacmen()
+
+    // TODO: unterschiedlich lange Animationen erlauben
+    pacmen_animation_number := pacmen_animation_number + 1
+    mark := @getwordarray(pacmen_animation, pacmen_animation_number)
+    if mark == -1 then
+    begin
+      pacmen_animation_number := 0
+      pacmen_in_animation := 0
+    end
+  end
+end
+
+// plays simple animation how pacmen died
+procedure @pacmen_stirbt()
+begin
+  for i:=0 to 17 do // @KILL_PACMEN_ELEMENTS ist 18
+  begin
+    @copypacmen(adr:pmm, pacmenx, pacmeny, adr:@KILL_PACMEN, i)
+    @sleep(4)
+  end
+end

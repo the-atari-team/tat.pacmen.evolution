@@ -1,0 +1,85 @@
+= The PACMeN-evolution
+
+Geister mit Kulleraugen, wollte ich mal machen.
+
+
+ ===== Linie
+ /oo\  Geist  in Bahn
+ |  |
+ ===== Linie
+ /..\   Pacmen in Bahn
+ \__/
+ ===== Linie
+
+
+* Alles basiert jetzt auf 3x3 Zeichen in Graphics 12
+* so kommen horizontal 13 a 3x3 Blöcke zusammen + 1Byte für den Abschluss, sind exakt 40Bytes.
+* Vertikal passt es nicht ganz, wir nehmen 7 a 3x3 + 1Byte für den unteren Abschluss sind 22 Zeilen, bleiben 2 Zeilen für ein paar Icons.
+
+== Level Entsprechungen
+* A wie 1
+* B wie 2
+* C wie 3
+* D wie 4
+* E wie 5
+* F wie 14
+* G wie 16
+* H wie 26
+* I wie 27
+* J wie 23
+* K wie 22
+* L wie 30
+* M wie 38
+* N wie 45
+
+== Finden des Pacmens: Ideen
+
+* Wir haben aktuell 3x3 Byte große Zellen.
+Das ergibt 13 Zellen nebeneinander und 7 Zellen untereinander, also 91 Zellen.
+Um jetzt von einer beliebigen Zelle in der ein Geist steht zu einer anderen beliebigen Zelle in der der Pacmen steht zu kommen,
+gibt es mehrerere Ansaetze.
+
+1. Dijkstra Algorithmus der berechnet, welcher Weg der optimale Weg ist. Zu teuer, der Atari ist nicht schnell genug. **verworfen**
+2. Floyd-Warshall-Algorithmus ein O(N^3) Algorithmus, der sich leicht vorausberechnen laesst, wie man optimal von A nach B kommt.
+   Allerdings verschlingt dieser Algorithmus auch ueber 8kb kostbaren Speicher pro Level. Weil eine Matrix (13*7)^2 untergebracht werden muss. Müsste für jeden Level mitgeliefert werden, selbst mein bester Packer kommt nicht unter 3kb, **verworfen!**.
+
+Wie waere es jetzt zuerst das 13*7 Playfield in 4 Quadranten aufzuteilen und dann nur noch dessen kleinere Quadranten zu berechnen.
+Also statt 91*91 sind es dann 4 Quadranten mit 3*5 und in der Mitte lassen wir 3*7 als neutrale Zone frei.
+Damit gaebe es 15*15 * 4 Felder, was nur 900bytes verbraucht, statt 8281 Bytes und sich hoffentlich im Levelwechsel berechnen liesse. **hinten an gestellt, weil nicht genauer betrachtet**
+
+== Geister Bewegung
+
+* Aktuell gibt es ein paar Bewertungen ob ein Geist in die eine oder andere Richtung laufen sollte. Dazu wird geguckt, wo sich der Pacmen befindet und dann einfach die Rasterweglänge bewertet.
+Um es etwas interessanter zu gestalten:
+
+* EXACT_POSITION nimmt ein Geist den Pacmen direkt aufs Korn
+* FRONT_POSITION einer nimmt an, das Pacmen 2 weiter links/rechts ist und falls er hoch geht, 2 weiter oben oder unten zusätzlich.
+* DIAGONAL_POSITION einer nimmt als Position das gegenüber des ersten Geistes als Ziel an.
+* CIRCLE_POSITION einer nimmt Pacmen direkt aufs Korn, berechnet aber immer dessen Abstand und ist dieser zu gering, nimmt er reiß aus in eine Ecke.
+
+Es gibt mehrere Modi
+* CHASE bewirkt, das die Geister Pacmen angreifen
+* SCATTER bewirkt, das die Geister sich verziehen, jeder in eine andere Ecke. Aber jeder nur so lange, bis er die Ecke erreicht hat, dann wird auf CHASE zurückgeschaltet.
+* Frisst Pacmen eine große Pille, bekommen alle Geister Angst, sollten langsam werden und sich in die gegenüberliegene Ecke verziehen.
+
+
+
+Hier ein paar Hinweise fuer Zellenbetrachtungen und ggf. Formeln/Ideen fuer Umsetzungen
+
+- F: Wie lang ist der Weg von (x0,y0) nach (x1,y1) in der euklidischen Metrik (Pythagoras) und in der Raster-Metrik (City-Block-Distance) ?
+- A: Euklid: Weglänge = Wurzel( (x1-x0)x(x1-x0) + (y1-y0)x(y1-y0) );
+- A:Raster: Weglänge = Betrag(x1-x0) + Betrag(y1-y0);
+
+* http://www.miszalok.de/Questions/QA08_ComputerVision/FA_ComputerVision.htm
+
+* https://www.gamasutra.com/view/feature/3938/the_pacman_dossier.php?print=1
+
+http://www.fatvat.co.uk/2010/08/sniffing-out-pacman.html
+
+Pacmen Augen finden ihr zu Hause.
+
+https://stackoverflow.com/questions/3148435/pacman-how-do-the-eyes-find-their-way-back-to-the-monster-hole/3149530#3149530
+
+Lösungen für Irrgärten
+
+https://de.wikipedia.org/wiki/L%C3%B6sungsalgorithmen_f%C3%BCr_Irrg%C3%A4rten

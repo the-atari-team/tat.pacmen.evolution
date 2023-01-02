@@ -1,0 +1,105 @@
+include sh:shuffle
+
+// Ein Shuffle ist ein Array, das eine bestimmte Anzahl (bis 254, ungetestet) an Werten
+// halten kann.
+// Ein Shuffle wird initialisiert mit einem Array der Groesse Anzahl+2 und der Anzahl
+// @init_shuffle(adr:array, anzahl)
+// Dann werden die Werte hinzugefuegt.
+// @shuffle_add(adr:array, n)
+// Es kann nicht ueber die festgelegte Anzahl hinaus weitere Werte hinzugefuegt werden, wird intern geprueft.
+// Sind alle Werte drin, wird geshuffelt. Dabei wird die Reihenfolge durcheinander gebracht.
+// @shuffle(adr:array)
+// Dabei wird einmal durch die Liste gelaufen und einfach 2 Werte geswappt. O(n)
+// Jetzt kann ein Wert geholt werden.
+// @shuffle_get(adr:array)
+// Der Wert wird immer wieder zurueck gegeben, bis man den diesen entfernt.
+// @shuffle_remove(adr:array)
+// Das ganze ist etwas auf Speed getrimmt. Nur das hinzufuegen/shufflen ist etwas teurer
+// Werte entnehmen geht in O(1) auch loeschen eines Wertes geht in O(1)
+
+word shuffle_ptr
+byte count
+
+byte index
+byte value
+
+// shuffle Array initialisieren
+// das erste Byte ist der interne index
+// das zweite Byte ist die Gesamtlaenge
+procedure @init_shuffle(shuffle_ptr, count)
+begin
+//  @setbyte(shuffle_ptr, 2)
+  @mem[shuffle_ptr] := 2
+//  @setbyte(shuffle_ptr + 1, count)
+  @mem[shuffle_ptr + 1] := count
+
+  @clearbyte(shuffle_ptr + 2, count)
+  // Shufflen erst, wenn die Liste gefuellt ist
+  // durch @shuffle()
+end
+
+byte a,b
+
+// gibt die Anzahl der Werte zurueck, die sich im Shuffle befinden
+function @shuffle_size(shuffle_ptr)
+begin
+  return @mem[shuffle_ptr] - 2
+end
+
+byte max
+
+// fuegt einen Wert einem Shuffle hinzu
+procedure @shuffle_add(shuffle_ptr, value)
+begin
+  index := @mem[shuffle_ptr]
+  max := @mem[shuffle_ptr + 1]
+  if index - 2 < max then
+  begin
+    @mem[shuffle_ptr + index] := value
+    @mem[shuffle_ptr] := index + 1
+  end
+end
+
+
+function @shuffle_get(shuffle_ptr)
+begin
+  index := @mem[shuffle_ptr] - 1
+  if index >= 2 then
+    return @mem[shuffle_ptr + index]
+
+  return 0
+end
+
+word addr
+
+procedure swap(shuffle_ptr, a, b)
+begin
+  addr := shuffle_ptr + 2
+  value := @mem[addr + a]
+  index := @mem[addr + b]
+
+  @mem[addr + a] := index
+  @mem[addr + b] := value
+end
+
+byte i
+
+procedure @shuffle(shuffle_ptr)
+begin
+  count := @mem[shuffle_ptr + 1]
+  for i:=0 to count-1 do
+  begin
+    value := @fastrand8(count)
+    swap(shuffle_ptr, i, value)
+  end
+end
+
+
+procedure @shuffle_remove(shuffle_ptr)
+begin
+  index:= @mem[shuffle_ptr]
+  if index > 2 then
+  begin
+    @mem[shuffle_ptr] := index-1
+  end
+end

@@ -1,0 +1,77 @@
+include ex:extra
+
+word screen
+word savmsc=88
+
+byte array extrastore[12]
+
+procedure @clearExtra()
+begin
+  screen := savmsc + 843
+  @fillbyte(2, screen, 12)
+//  for extra :=0 to 9 do
+//  begin
+//    @setByte(screen + extra, 2)
+//  end
+end
+
+procedure @restoreExtra()
+begin
+  screen := savmsc + 843
+  @move(adr:extrastore, screen, 12)
+end
+
+procedure @storeExtra()
+begin
+  screen := savmsc + 843
+  @move(screen, adr:extrastore, 12)
+end
+
+byte extra
+byte invers
+
+procedure @setExtra(extra, invers)
+begin
+  screen := extra * 2 + savmsc + 843
+  @mem[screen] := extra + $30 ! invers
+  @mem[screen+1] := $36 ! invers
+end
+
+procedure @setLive(extra)
+begin
+  screen := savmsc + 879 - extra * 2
+  @mem[screen] :=   55 ! $80
+  @mem[screen+1] := 56 ! $80
+end
+
+byte i
+
+procedure @flackerExtra()
+begin
+  invers := 0
+
+  @audio_play_extra_fanfare()
+
+//  for i:=9 downto 1 do
+//  begin
+//    for extra:=1 to 5 do
+//    begin
+//      @setExtra(extra, invers)
+//      @sleep(i)
+//    end
+//    invers := invers xor $80
+//  end
+
+  for i := 0 to 6 do
+  begin
+    for extra:=1 to 5 do
+    begin
+      @setExtra(extra, invers)
+      @sleep(1)
+    end
+    invers := invers xor $80
+  end
+
+  @music_stop_timer()
+  @music_set_speed(3)
+end

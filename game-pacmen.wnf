@@ -1,0 +1,1163 @@
+program pacmen
+
+LOMEM=$2000,runad
+
+// DEMO of pacmen
+// very simple
+// no animation
+
+// --- GTIA ---
+byte array HPOSP[4]=@
+
+byte array HPOSM[4]=@
+
+byte array SIZEP[4]=@ // 53256
+
+byte PAL=@ // 1=PAL, $E=NTSC
+
+byte array COLPM[4]=@ // 53266
+byte array COLPF[4]=@ // 53270
+byte COLBK=@ // 53274
+
+byte array PCOLR[4]=@ // Schatten von 53266-9
+byte array COLOR[5]=708 // Schatten von 53270-4
+
+byte GRACTL=@ // 53277 // 2:Player an 1: Missiles an
+
+byte HITCLR=@ // 53278 // loeschen der Kollisionsregister
+
+// --- POKEY ---
+
+byte RANDOM=@ // 53770 // $d20a
+
+// --- ANTIC ---
+
+byte DMACTL=@ // 54272
+byte SDMCTL=@ // 559 // Schatten von 54272 DMACTL
+
+byte CHACTL=@ // 54273
+byte CHACT=@
+
+word DLIST=@ // 54274
+
+byte PMBASE=@ // 54279 // 2kb Grenze ($800)
+
+byte CHBASE=@ // 54281
+byte CHBAS=@ // Schatten von 54281 (Zeichensatz) 1k Grenze ($400)
+
+byte WSYNC=@ // wert hineinschreiben haelt die CPU an
+
+byte VCOUNT=@ // vertikale Bildschirmzeile / 2 bei PAL 0-155
+
+byte GPRIOR=@
+
+byte CONSOL=@
+
+// um das Spiel reset-fest zu machen
+byte boot=@
+word dosvec=@
+word dosini=@
+byte coldst=@
+byte srtimr=@
+byte KRPDEL = @
+byte keyrep = @
+
+word runad=@
+
+byte noclik=@
+
+word ghosts_killed = @ghosts_killed
+
+const pmstart=$B000
+
+byte array PMM[1] = $B300
+byte array PM0[1] = $B400
+//byte array PM1[1] = $B500
+//byte array PM2[1] = $B600
+//byte array PM3[1] = $B700
+
+word array pmadr[5] = [
+$B400,
+$B500,
+$B600,
+$B700,
+$B300
+]
+
+// byte game_mode = @game_mode
+
+procedure initPlayerMissile()
+begin
+  PCOLR[0]:=$00
+  PCOLR[1]:=$00
+  PCOLR[2]:=$00
+  PCOLR[3]:=$00
+
+  SDMCTL:=$3E // 559
+//        $20 + // DMA
+//        $10 + // einzeilige Aufloesung
+//        $08 + // DMA Player ein
+//        $04 + // DMA Missiles ein
+//        $02   // schmalles Anzeigefeld (32 bytes)
+
+  GRACTL:=3   // 53277
+  PMBASE:=$B0 // 54279
+  GPRIOR:=17  // 623
+//        16 + // Die 4 Missiles werden zu 5. Player (Color 711)
+//         1   // Player 0-3, Anzeigefeld 0-3, Hintergrund
+
+  @clearbyte(adr:pmm, 1280)
+end
+
+byte desired_level = @desired_level
+
+byte ch=@
+const @ch_up=28
+const @ch_down=29
+
+byte value
+word w_index
+
+
+//
+//  OOOOO  OO                        OO
+// OO   OO OO       OOOOO   OOOOO  OOOOOOO  OOOOO
+// OO      OOOOOO  OO   OO OO        OO    OO
+// OO OOOO OO   OO OO   OO  OOOOO    OO     OOOOO
+// OO   OO OO   OO OO   OO      OO   OO         OO
+//  OOOOO  OO   OO  OOOOO   OOOOO     OOOO  OOOOO
+//
+
+byte array ghost_start_x[4] = @ghost_start_x
+byte array ghost_start_y[4] = @ghost_start_y
+
+byte array ghost_mode[4] = @ghost_mode
+byte array ghost_mode_countdown[4] = @ghost_mode_countdown
+byte array ghost_approach[4] = @ghost_approach
+
+byte array ghost_animation_number[4] = @ghost_animation_number
+word array ghost_animation[@split] = @ghost_animation
+
+byte array ghost_move_direction[4] = @ghost_move_direction
+
+byte array ghost_waitfor[4] = @ghost_waitfor
+
+byte array in_augen_mode[4] = @in_augen_mode
+
+byte currentGhost
+byte ghost
+
+//const EXACT_POSITION = 1
+//const FRONT_POSITION = 2
+//const DIAGONAL_POSITION = 3
+//const CIRCLE_POSITION = 4
+
+//
+// OOOOOO
+// OO   OO  OOOOOO  OOOOO  OOO OO   OOOOOO OOOOOO
+// OO   OO OO   OO OO   OO OOOOOOO OO   OO OO   OO
+// OOOOOO  OO   OO OO      OO O OO OO   OO OO   OO
+// OO      OO   OO OO   OO OO O OO OO   OO OO   OO
+// OO       OOOOOO  OOOOO  OO O OO  OOOOOO OO   OO
+//
+
+byte pacmen_start_x = @pacmen_start_x
+byte pacmen_start_y = @pacmen_start_y
+
+byte xpf = @pacmen_x_pf
+byte ypf = @pacmen_y_pf
+
+byte pacmen_start_x_pf = @pacmen_start_x_pf
+byte pacmen_start_y_pf = @pacmen_start_y_pf
+
+
+const getWishedDirection = @getWishedDirection
+//
+// OOOOOO   OOOO                      OOOO    OO            OOOO        OO
+// OO   OO    OO    OOOOOO OO   OO   OO             OOOOO     OO        OO
+// OO   OO    OO   OO   OO OO   OO OOOOOOO  OOOO   OO   OO    OO    OOOOOO
+// OOOOOO     OO   OO   OO OO   OO   OO       OO   OOOOOOO    OO   OO   OO
+// OO         OO   OO   OO  OOOOOO   OO       OO   OO         OO   OO   OO
+// OO      OOOOOOO  OOOOOO      OO   OO    OOOOOOO  OOOOO  OOOOOOO  OOOOOO
+//                         OOOOOO
+
+byte playfieldScreenValue
+byte setBullet
+// byte xpf,ypf       // diese Variablen nutzen fuer Playfield-Aufloesung [13,7]
+word screen
+word screenxy
+
+byte xy_pf
+byte countOfCookies = @countOfCookies
+byte countOfSuperCookies = @countOfSuperCookies
+
+byte charOfPlayfield
+
+byte array mul13[1] = @mul13
+
+byte array playfield[91] = @playfield
+
+// Das sind die echten X Byte-Positionen im 3x3 Playfield
+byte array n12p4[1] = [4,16,28,40,52,64,76,88,100,112,124,136,148,160]
+
+// Das sind die echten Y Byte-Positionen im 3x3 Playfield
+byte array n24p8[1] = [8,32,56,80,104,128,152]
+
+const game_screen = @game_screen
+
+// byte array playfieldFilename[1] = ['D1:PLAYSA.DAT']
+// const playfieldFilenameNumPos = 8
+
+procedure @load_background(charOfPlayfield)
+begin
+//  playfieldFilename[playfieldFilenameNumPos] := charOfPlayfield
+//  @open(1,4,0,adr:playfieldFilename)
+//  @bget(1, game_screen, 6)
+//  @bget(1, game_screen, 960)
+//  @close(1)
+  @huffman_decode(charOfPlayfield, game_screen)
+
+  screen := game_screen
+  for w_index:=0 to 959 do
+  begin
+//    value := @getByte(screen + w_index)
+    value := @mem[screen + w_index]
+    if value < 32 then
+    begin
+      value := value ! 128
+//      @setByte(screen + w_index, value)
+      @mem[screen + w_index] := value
+    end
+  end
+
+  // The Playfield is 13 fields wide
+  // The Playfield is  7 fields high
+  // There are 91 fields
+
+  // The Playfield is divided in 3x3 Blocks,
+  // 123
+  // 456
+  // 789
+
+  // here we look only at the inner 2x2 block
+  // 56
+  // 89
+  screen := adr:game_screen + 41 // Start at position (5)
+
+  currentGhost := 0
+  countOfCookies := 0
+  countOfSuperCookies := 0
+
+  // Run through the whole Playfield and identify lot of Positions
+  // set Bullets in the screen
+  // 56 At (5): Pacmen, Ghost, Extra Cookie
+  // 89 At (9): No Cookie
+  for ypf:=0 to 6 do
+  begin
+    screenxy := screen
+    for xpf:=0 to 12 do
+    begin
+      playfieldScreenValue := @mem[screenxy] // Wir lesen direkt den Screen aus
+      if playfieldScreenValue == 124 then // Extra Bullet, Ghost will get blue
+      begin
+        if game_difficult == 10 then
+        begin
+          // Bomb Mode, do not set super cookies, the only possibility to kill ghosts is by bomb
+          @setCookie(xpf, ypf, 2)
+        end
+        else
+        begin
+          @setCookie(xpf, ypf, 4)
+          countOfSuperCookies := countOfSuperCookies + 1
+        end
+        countOfCookies := countOfCookies + 1
+      end
+      else
+      begin
+        if playfieldScreenValue == 123 then // Empty, here no Floyd Test
+        begin
+//          @setByte(screenxy, 32)
+          @mem[screenxy] := 32
+        end
+        if playfieldScreenValue == 126 then
+        begin
+          pacmen_start_x_pf := xpf      // hier landen die collectibles
+          pacmen_start_y_pf := ypf
+          pacmen_start_x := n12p4[xpf]
+          pacmen_start_y := n24p8[ypf]
+//          @setByte(screenxy, 32)
+          @mem[screenxy] := 32
+        end
+
+        if playfieldScreenValue == 127 then
+        begin
+          ghost_start_x[currentGhost] := n12p4[xpf]
+          ghost_start_y[currentGhost] := n24p8[ypf]
+
+//          @setByte(screenxy, 32)
+          @mem[screenxy] := 32
+          currentGhost := currentGhost + 1
+        end
+
+        setBullet := @mem[screenxy + 41]
+
+        if setBullet == 125 then  // Here we set no normal Bullet
+        begin
+          // hier kein Bullet, aber das Kreuz muss weg
+//          @setByte(screenxy + 41, 32)
+          @mem[screenxy + 41] := 32
+        end
+        else
+        begin
+          if setBullet == 32 then
+          begin
+            @setCookie(xpf, ypf, 1)
+            countOfCookies := countOfCookies + 1
+          end
+        end
+      end
+
+      screenxy := screenxy + 3
+    end
+    screen := screen + 120             // 3 Zeilen weiter
+  end
+end
+
+// init Playfield, damit wissen wir dann, in welche Richtung wir gehen koennen
+byte load_level
+
+procedure @init_playfield()
+begin
+  for ypf:=0 to 6 do
+  begin
+    for xpf:=0 to 12 do
+    begin
+      value := @check_around(n12p4[xpf], n24p8[ypf])
+
+      xy_pf := mul13[ypf] + xpf
+      playfield[xy_pf] := value
+    end
+  end
+
+  // Alle Level ausser den Extra Levels haben eine Tuersperre
+  if load_level < 22 then
+  begin
+    // Wir maskieren hier die direction down raus!
+    // somit kann ein Geist nicht in sein Haus zurück und auch Pacmen kann nicht hinein
+    playfield[45] := playfield[45] & %10001011
+  end
+end
+
+byte ramtop=@
+word savmsc=@
+
+byte drawableChbas = @drawableChbas
+
+byte critic=@
+
+word gameTime
+
+byte charcolor
+byte collectedExtra
+
+byte array extralevels[7]
+byte i
+
+procedure @init_extralevels()
+begin
+  @init_shuffle(adr:extralevels, 5)
+  for i:=26 downto 22 do
+  begin
+    @shuffle_add(adr:extralevels, i) // PLAYSZ
+  end
+  @shuffle(adr:extralevels)
+end
+
+byte array levels[17]  // max_game_level + 2
+
+procedure @init_levels()
+begin
+  @init_shuffle(adr:levels, max_game_level)
+  for i:=max_game_level downto 1 do
+  begin
+    @shuffle_add(adr:levels, i) // PLAYSA...
+  end
+end
+
+procedure clearAllExtra()
+begin
+  @initExtraCollectible()
+  collectedExtra := 0
+  @clearExtra()
+  @storeExtra()
+  newCollectiblePossible := 1
+end
+
+//
+//  OO             OO    OO
+//                       OO
+// OOO  OOOOOOOO  OOO  OOOOOO          OOOOOOOO  OOOOOOOO OOOO OOO   OOOOOOO
+//  OO  OO     OO  OO    OO           OO     OO OO     OO OO OOO OO OO     OO
+//  OO  OO     OO  OO    OO           OO     OO OO     OO OO  O  OO OOOOOOOOO
+//  OO  OO     OO  OO    OO            OOOOOOOO OO     OO OO  O  OO OO
+// OOOO OO     OO OOOO    OOO                OO  OOOOOOOO OO  O  OO  OOOOOOO
+//                                    OOOOOOOO
+
+procedure @init_game()
+begin
+  clearAllExtra()
+
+  @init_current_score()
+
+  @init_levels()
+  @init_extralevels()
+  player_lives := 3
+  ghosts_killed := 0
+
+  @init_difficult()
+
+  for i:=1 to desired_level do             // so lange Level auslesen, bis der gewuenschte Level erreicht ist.
+  begin
+    game_level := @shuffle_get(adr:levels) // A==1
+    @shuffle_remove(adr:levels)
+  end
+  load_level := game_level
+
+end
+
+byte setNewCollectible
+
+byte progress
+byte progress_countdown
+byte progress_value
+byte progress_action
+
+procedure clear_progress()
+begin
+  progress := 0
+  progress_countdown := 1 // so erscheint der Progress sehr schnell, sobald progress gesetzt wird.
+  progress_value := 32
+  progress_action := 0
+  @clear_progress_slider()
+end
+
+byte waitfor = @pacmen_waitfor
+byte multiply_score_10 = @pacmen_multiply_score_10
+
+procedure @init_level()
+begin
+  newCollectibleCountdown := @getCollectibleCountdown(game_level) // ~12s
+  newCollectibleWaitfor := 0
+  setNewCollectible := 0
+  eatenCollectible := 0
+  @initLevelCollectible()
+  gameTime := 0
+  currentCollectible := @nextCollectible()
+  charcolor := @copy_PadData_in_Charset(currentCollectible)
+
+  clear_progress()
+  multiply_score_10 := 0
+end
+
+procedure animateProgress()
+begin
+  if progress == 0 then return 0        // kein Progress, raus
+
+  if progress_countdown > 0 then
+  begin
+    progress_countdown := progress_countdown - 1
+  end
+  else
+  begin
+    progress_value := progress_value - 1
+    @set_progress_slider(progress_value)
+    if progress_value == 0 then
+    begin
+      clear_progress()
+      @audio_play_stop_tic_toc()
+      waitfor := @getPacmenSpeed(game_level)
+      multiply_score_10 := 0
+    end
+    else
+    begin
+      progress_countdown := 20
+    end
+  end
+end
+
+byte ghost_killed_for_score_index = @ghost_killed_for_score_index
+
+word array ghost_Score[4] = [ // muss als hex angegeben werden.
+  $200, $400, $800, $1600
+]
+
+byte number
+
+procedure pacmen_kill_ghost(number)
+begin
+  ghost_mode[number] := AUGEN
+  in_augen_mode[number] := 0
+  if ghost_move_direction[number] == right or ghost_move_direction[number] == up then
+  begin
+    ghost_animation[number] := adr:@right_ghost_empty_animation
+  end
+  else
+  begin
+    ghost_animation[number] := adr:@left_ghost_empty_animation
+  end
+  ghost_animation_number[number] := 0
+  ghost_waitfor[number] := SPEED_98
+  ghost_mode_countdown[number] := 250 // wir bleiben so lange im AUGEN Mode wie noetig
+  ghosts_killed := ghosts_killed + 1
+end
+
+//
+//                                          OOOO
+//  OOOOOO  OOOOOO OOO OO   OOOOO             OO    OOOOO   OOOOO  OOOOOO
+// OO   OO OO   OO OOOOOOO OO   OO            OO   OO   OO OO   OO OO   OO
+// OO   OO OO   OO OO O OO OOOOOOO            OO   OO   OO OO   OO OO   OO
+//  OOOOOO OO   OO OO O OO OO                 OO   OO   OO OO   OO OOOOOO
+//      OO  OOOOOO OO O OO  OOOOO          OOOOOOO  OOOOO   OOOOO  OO
+// OOOOOO                                                          OO
+
+byte extra
+byte pacmen_collision
+byte collision_with_ghost
+
+byte colbk_change = @colbk_change
+byte cookie_value
+
+procedure game_loop()
+begin
+
+  // Einmal zeichnen, damit die Geister restauriert werden koennen
+  @draw_ghost(0)
+  @draw_ghost(1)
+  @draw_ghost(2)
+  @draw_ghost(3)
+
+  @draw_pacmen() // Pacmen einmal zeichnen, sonst wird er erst sichtbar, wenn er bewegt wird.
+
+  hitclr := 1    // Alle Player-Missile-Kollisionen loeschen
+
+  while countOfCookies != 0 and game_mode != MODE_PACMEN_LOST_LIVE and game_mode != MODE_ABBRUCH and collectedExtra < 5 do
+  begin
+    // TODO: merken, welche Zeile noch sichtbar ist (oben, unten) (PAL, NTSC)
+//    @waitline(4) // Zum Testen
+    @waitline(94)
+//    @backcolorline($0f)
+
+// Geister in der richtigen Reihenfolge wieder herstellen, es geht um die Augen!
+    @restoreghost(3)
+    @restoreghost(2)
+    @restoreghost(1)
+    @restoreghost(0)
+
+//    @backcolorline($0f)
+    @move_pacmen(getWishedDirection)
+//    colbk:=$86
+    @setAndAnimatePacmen()
+//    @backcolorline($0f)
+//    colbk:=0
+
+// Wir muessen die collectibles exakt hier setzen, sonst gibt es Probleme mit den Augen!
+    if setNewCollectible == 1 then
+    begin
+      setNewCollectible := 0
+      // TODO: wir wollen mehrfarbige Cookies, Farbe extra uebergeben
+      @setCookie(pacmen_start_x_pf, pacmen_start_y_pf, cookie_value!charcolor)
+    end
+
+// move und draw sind getrennt, das spart genug Zeit fuer flackerfreie Geister in NTSC?
+// Zeichnen der Geister
+    @draw_ghost(0)
+    @draw_ghost(1)
+    @draw_ghost(2)
+    @draw_ghost(3)
+
+// ------------------------------------------------------
+// Ab hier haben wir eine gewisse Zeit fuer alle Aufgaben
+//
+    @move_ghost(0)
+    @move_ghost(1)
+    @move_ghost(2)
+    @move_ghost(3)
+
+    @animateAllGhosts()
+
+    animateProgress()
+
+    GameTime := GameTime + 1
+
+    if eatenCollectible == 1 then
+    begin
+      // Collectible wurde von Pacmen gegessen,
+      // hier auswerten, was es war.
+      // Es steht in currentCollectible
+      extra := @isExtra(currentCollectible)
+      if extra != 0 then
+      begin
+        @removeExtraCollectible()
+        collectedExtra := collectedExtra + 1
+        @setExtra(extra, $80)
+        // TODO: Tone Extra Buchstabe gegessen
+      end
+      else
+      begin
+        @removeLevelCollectible()
+        @add_current_score($200)
+        // TODO: Tone Collectible gegessen
+        progress := @isProgressable(currentCollectible)
+        if progress != 0 then
+        begin
+          progress_action := progress
+          @audio_play_start_tic_toc()
+        end
+      end
+
+      newCollectiblePossible := 1
+      if progress != 0 then
+      begin
+        // Wir wollen nicht das innerhalb des progress Countdowns ein Collectible erscheint
+        newCollectibleCountdown := 680
+      end
+      else
+      begin
+        newCollectibleCountdown := @getCollectibleCountdown(game_level) // Zeit bis zum naechsten Collectible
+      end
+      currentCollectible := @nextCollectible()
+      eatenCollectible := 0
+    end
+
+    if newCollectiblePossible == 1 then
+    begin
+      // Es ist moeglich ein Collectible zu setzen, wir zaehlen einen Countdown
+      newCollectibleCountdown := newCollectibleCountdown - 1
+      if newCollectibleCountdown == 0 then
+      begin
+        // TODO: wir wollen unterschiedliche Farben fuer die Collectibles
+        charcolor := @copy_PadData_in_Charset(currentCollectible)
+        // HIER DEN COOKIE NICHT SETZEN, SONST GIBT ES PROBLEME MIT AUGEN!
+//        @copy_PadData_in_Charset(currentCollectible)
+//        @setCookie(pacmen_start_x_pf, pacmen_start_y_pf, 5)
+        setNewCollectible := 1
+        cookie_value := 5
+        newCollectiblePossible := 2
+        newCollectibleWaitfor := @getCollectibleWaitFor(game_level) // ~10s sichtbar
+      end
+    end
+    else if newCollectiblePossible == 2 then  // Collectible ist sichtbar fuer ~10s
+    begin
+      newCollectibleWaitfor := newCollectibleWaitfor - 1
+      if newCollectibleWaitfor == 0 then
+      begin
+        setNewCollectible := 1
+        cookie_value := 0
+        // HIER DEN COOKIE NICHT SETZEN, SONST GIBT ES PROBLEME MIT AUGEN!
+//        @setCookie(pacmen_start_x_pf, pacmen_start_y_pf, 0)
+        newCollectiblePossible := 1
+        newCollectibleCountdown := @getCollectibleCountdown(game_level)
+      end
+    end
+
+
+//    if SIZEP[0] ! SIZEP[1] ! SIZEP[2] ! SIZEP[3] != 0  then
+    pacmen_collision := @Pacmen_collision_with_ghost()
+    if pacmen_collision != 0 then
+    begin
+      // PACMEN kollidiert mit Geist
+      if pacmen_collision & %00000001 != 0 then
+        collision_with_ghost := 0
+
+      if pacmen_collision & %00000010 != 0 then
+        collision_with_ghost := 1
+
+      if pacmen_collision & %00000100 != 0 then
+        collision_with_ghost := 2
+
+      if pacmen_collision & %00001000 != 0 then
+        collision_with_ghost := 3
+
+      if ghost_mode[collision_with_ghost] == ANGST then
+      begin
+        // Geist ist in ANGST: Geist loest sich auf, Augen wandern zu dessen Startposition
+        pacmen_kill_ghost(collision_with_ghost)
+
+        // TODO: Ton Geist gefressen
+        @audio_play_ghost_eaten()
+        // TODO: Ton Augen bewegen sich
+        @audio_play_augen_movement()
+
+        @add_current_score(ghost_score[ghost_killed_for_score_index & 3])
+        ghost_killed_for_score_index := ghost_killed_for_score_index + 1
+
+        hitclr := 1
+      end
+      else if ghost_mode[collision_with_ghost] == AUGEN then
+      begin
+        // bei Augen passiert ueberhaupt nix
+        hitclr := 1
+      end
+      else
+      begin
+        if game_difficult == 0 then // godmode
+        begin
+          hitclr := 1
+        end
+        else
+        begin
+          game_mode := MODE_PACMEN_LOST_LIVE
+        end
+      end
+    end
+
+    if progress != 0 then
+    begin
+      if progress_action == 1 then
+      begin
+        // Bomb explosion
+        if @strig(0) == 0 then
+        begin
+          for i:=0 to 3 do
+          begin
+            pacmen_kill_ghost(i)
+          end
+
+          colbk_change := 15
+
+          @audio_play_ghost_eaten()
+          @audio_play_augen_movement()
+          @add_current_score($4000)
+
+          clear_progress()
+          @audio_play_stop_tic_toc()
+        end
+      end
+      else if progress_action == 2 then
+      begin
+        // HiSpeed Pacmen
+        waitfor := SPEED_98
+      end
+      else if progress_action == 3 then
+      begin
+        // Cake eaten, 10x Score
+        // TODO: Sahnehaeubchen?
+        multiply_score_10 := 1
+      end
+    end
+
+//    debug := 1
+//    if debug == 1 then
+//    begin
+//      @fast_gotoxy(20,22)
+//      for i:=0 to 3 do
+//      begin
+//        @fast_gotox(28 + i)
+//        if ghost_mode[i] == SCATTER then
+//          @printff('\0S')
+//
+//        else if ghost_mode[i] == CHASE then
+//          @printff('\0C')
+//
+//        else if ghost_mode[i] == ANGST then
+//          @printff('\0A')
+//
+//        else //  if ghost_mode[i] == AUGEN then
+//          @printff('\0:')
+//      end
+//    end
+
+//    colbk := $56
+    @showScore()
+
+//    @fast_gotoxy(0,0)
+//    @printff('%d ', countOfCookies)
+
+//    @backcolorline($0f)
+
+//    @backcolorline($3f)
+//    colbk:=$32
+//    @getchar()
+  end
+
+//  @fast_gotoxy(0,22)
+//  @printff('TIME: %d    ', gameTime)
+//  @getchar()
+  return 0
+end
+
+byte array playfield_color[4] = @playfield_color
+
+
+//
+//                    OO
+//
+// OOO OO   OOOOOO  OOOO   OOOOOO
+// OOOOOOO OO   OO    OO   OO   OO
+// OO O OO OO   OO    OO   OO   OO
+// OO O OO OO   OO    OO   OO   OO
+// OO O OO  OOOOOO OOOOOOO OO   OO
+//
+
+
+byte red = 134    // Adresszuweisung, red zeigt auf Adresse 134!
+byte gold = 135
+byte green = 136
+byte pink = 137
+
+byte array ghost_color[4] = @ghost_color
+
+procedure init_color()
+begin
+  red := $44
+  if pal == 1 then red := $34
+//  blue := $76
+  gold := $18
+  green := $c8
+  pink := $6a
+
+  PCOLR[0] := red
+  PCOLR[1] := gold // blue
+  PCOLR[2] := green
+  PCOLR[3] := pink
+
+  ghost_color[0] := red
+  ghost_color[1] := gold // blue
+  ghost_color[2] := green
+  ghost_color[3] := pink
+
+  playfield_color[0] := $84 // Blau
+  playfield_color[1] := $0f // Weiss der Augen
+  playfield_color[2] := $34
+  playfield_color[3] := $1c // Gelb fuer Pacmen
+  playfield_color[4] := $00 // Hintergrund
+end
+
+begin
+  coldst := 1
+
+  pcolr[5] := 0
+
+//  if runad != 0 then // after reset this is 0
+//  begin
+//    coldst := 0      // Programm reset fest
+//    boot := 0
+//    dosvec := runad
+//  end
+
+  srtimr := $12        // Keyboard repeat highspeed
+  KRPDEL := $12
+  keyrep := 2
+
+  @clearbyte($be07,12)  // clear 'Loading ...'
+
+  game_mode := MODE_INTRO
+
+  savmsc := adr:@game_screen
+
+// Wenn wir mit @printf arbeiten!
+//  @graphics(12)
+//  @poke(@dpeek(560)+26, 4+128)
+
+  noclik:=$ff // kein Tastaturklick!
+
+  chbas := $b0
+  drawableChbas := $b0
+
+  colbk_change := 15
+  @initDLI()
+
+//  @huffman_decode(36, $b000)
+
+  @music_init_interrupts()
+
+  initPlayerMissile()
+
+  init_color()
+
+  // TODO: hier steht das debug=1
+  // debug := 1
+
+  desired_level := 1
+
+  ghost_approach[0] := CIRCLE_POSITION
+  ghost_approach[1] := FRONT_POSITION
+  ghost_approach[2] := DIAGONAL_POSITION
+  ghost_approach[3] := EXACT_POSITION
+
+  game_level := game_start
+  game_difficult := game_difficult_start
+
+  @init_game()
+  @initfade()
+
+  while 1=1 do
+  begin
+    if game_mode == MODE_PLAY then
+    begin
+      @init_level()
+      // Level immer laden, nur so bekommen wir neue Cookies
+      @load_background(load_level + 9)
+
+      @init_playfield()
+
+      @init_fastscreen(game_screen) // 22*40
+      @INIT_SET_BYTES_PER_LINE(40)
+
+      @fast_gotoxy(0,22)
+      @printff('\21UP - PTR \1HIGH SCORE')
+      @fast_gotoxy(20,22)
+//      @printff('\200000000    \000000000')
+      @print_score()
+      @fast_gotox(28)
+      @printff('[\\]^') // String fuer den ProgressBar Farbe 0 und 4 Zeichen
+//      @fast_gotox(32)
+      @print_highscore()
+
+      @restoreExtra()
+      // Draw Pacmens for Lives max 9
+      for i:=1 to @min(9,player_lives) do
+      begin
+        @setlive(i)
+      end
+
+      @init_pacmen()
+
+      init_color()
+      @fadein()
+
+      // IMPORTANT: erst muss fade in kommen, damit der Font wieder an der richtigen Stelle ist
+      @init_ghosts()
+//      @poke($b416,$41)
+//      @mem[$b416] := $41
+//      @poke($b418,$41)
+//      @poke($b419,$41)
+
+      @audio_play_wait_as_long_music_plays()
+
+      @audio_play_audio_init()
+      @audio_play_muted_charge()
+
+      game_loop()
+
+      @audio_play_stop_augen()
+      @audio_play_stop_tic_toc()
+
+      clear_progress()
+
+      @sleep(2)
+
+      @storeExtra()
+      // TODO: ueberlegen, wie wir den Gameloop beenden
+
+      if collectedExtra == 5 then
+      begin
+        @flackerExtra()
+        player_lives := player_lives + 1
+
+        clearAllExtra()
+        newCollectiblePossible := 0
+
+        // extra levels sind im Shuffle abgelegt, ist es leer, wird es wieder gefuellt
+        load_level := @shuffle_get(adr:extralevels)
+        if load_level == 0 then
+        begin
+          @init_extralevels()
+          load_level := @shuffle_get(adr:extralevels)
+        end
+        @shuffle_remove(adr:extralevels)
+      end
+
+      else if countOfCookies == 0 then
+      begin
+        // Alle Cookies abgeraeumt
+        // Next Level
+        @audio_play_next_level()
+        @add_current_score($1000) // Nochmal 1000 Punkte fuer Level Change
+
+        game_mode := MODE_PLAY
+
+        game_level := @shuffle_get(adr:levels)
+        if game_level == 0 then
+        begin
+          @init_levels()
+          if game_difficult > 5 then
+          begin
+            @shuffle(adr:levels)
+          end
+          game_level := @shuffle_get(adr:levels)
+          // TODO: next level? Check max level, start with more speed at level 1 again
+          if game_difficult != 0 then // in godmode never go to next difficult
+          begin
+            // not godmode, go until suizid
+            // stay in each other after suizid
+            if game_difficult < 8 then
+            begin
+              game_difficult := game_difficult + 1
+            end
+          end
+        end
+        @shuffle_remove(adr:levels)
+
+        load_level := game_level
+        newCollectiblePossible := 1
+      end
+
+      else if game_mode == MODE_PACMEN_LOST_LIVE then
+      begin
+        // zusaetzliche Strafe, extras werden geloescht
+        if game_difficult > 3 then
+        begin
+          clearAllExtra()
+        end
+
+        @clearbyte(adr:pm0, 1024)
+        @sleep(1)
+
+        @restoreghost(3)
+        @restoreghost(2)
+        @restoreghost(1)
+        @restoreghost(0)
+        @sleep(10)
+
+        @audio_play_pacmen_lost_life()
+        @pacmen_stirbt()
+
+        player_lives := player_lives - 1
+        if player_lives == 0 then
+        begin
+          game_mode := MODE_GAME_OVER
+        end
+        else
+        begin
+          game_mode := MODE_PLAY
+        end
+
+        load_level := game_level
+        newCollectiblePossible := 1
+
+        @sleep(25)
+      end
+
+      else
+      begin
+        game_mode := MODE_GAME_OVER
+      end
+
+      @fadeout()
+
+      // - game over, time out, ...
+      // - ausblenden
+
+    end
+
+    if game_mode == MODE_INTRO then
+    begin
+      @music_init(adr:@pacmen_music, $28, adr:@music_takt_pacmen_title_music)
+      @music_start_timer()
+
+      @init_title()
+      @fadein()
+      // IMPORTANT: erst muss fade in kommen, damit der Font wieder an der richtigen Stelle ist
+      @init_ghosts()
+      // @fillbyte($41,$b41f,2)
+
+      @title_loop()
+      @music_stop_timer()
+
+      @fadeout()
+
+      @sleep(2)
+
+      @init_game()
+      game_mode := MODE_PLAY
+    end
+
+    if game_mode == MODE_GAME_OVER then
+    begin
+      @audio_play_pacmen_game_over()
+      @load_background(8)
+
+      init_color()
+      @fadein()
+      // IMPORTANT: erst muss fade in kommen, damit der Font wieder an der richtigen Stelle ist
+      @init_ghosts()
+//      @poke($b416,$41)
+//      @mem[$b416] := $41
+      // TODO: Play Game Over Melodie
+      i:=0
+      while i<254 do
+      begin
+        @animateAllGhosts()
+        // @waitline(15)
+
+        @draw_ghost(0)
+        @draw_ghost(1)
+        @draw_ghost(2)
+        @draw_ghost(3)
+        // @backcolorline(15)
+
+        if consol == 6 then break // start is bit 0
+        if @strig(0) == 0 then break // fire pressed
+
+        @waitline(94)
+        i:=i+1
+      end
+      @fadeout()
+
+      @sleep(25)
+      game_mode := MODE_INTRO
+
+    end
+  end
+
+//  @exit()
+
+end
+
+include 'FAST_SCREEN_OUTPUT.INC'
+include 'SCREEN_OUTPUT.INC'
+include 'PRINTF.INC'
+include 'FILLBYTE.INC'
+// include 'GETCHAR.INC'
+// include 'IO.INC'
+include 'MATH.INC'
+//include 'VERYFASTMATH_MUL.INC'
+//include 'MATH_HYPOT.INC'
+//include 'MATH_SQRT.INC'
+include 'BASIC.INC'
+include 'RANDOM.INC'
+include 'ARRAY.INC'
+include 'STICK.INC'
+// include 'PEEKNPOKE.INC' // funktioniert jetzt mit @mem[addr] := byte
+include 'BACKCOLORLINE.INC'
+
+include 'pacmen-struct.INC'
+include 'draw-ghosts.INC'
+include 'GHOSTS.INC'
+include 'PACMDATA.INC'    // pacmen-data.wnf
+include 'font.INC'
+include 'draw-pacmen.INC'
+include 'PACMOVE.INC'     // move-pacmen.wnf
+include 'GHSTMOVE.INC'    // move-ghost.wnf
+include 'GAME-DLI.INC'
+include 'PACINTRO.INC'    // pacmen-title-intro.wnf
+include 'COOKIE.INC'
+include 'KEYCODE.INC'
+include 'FADE.INC'
+include 'SHUFFLE.INC'
+include 'EXTRA.INC'
+include 'LEVEL.INC'
+include 'COLLISION.INC'
+include 'AUDIOPLY.INC'    // audio-play.wnf
+
+include 'SHOWSCR.INC'     // show-score.wnf
+include 'HIGHSCORE.INC'
+include 'progress-slider.INC'
+include 'huffman-decode.INC'
+include 'COMPRESSED-PLAYFIELDS.INC' // Die Playfields
+
+include 'music/NOTEN.INC'
+include 'music/HEXEN.INC'
+include 'music/pacmen-music.INC'
+include 'music/pacmen-audio.INC'

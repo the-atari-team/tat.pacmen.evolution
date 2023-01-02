@@ -1,0 +1,932 @@
+include mg:ghstmove
+
+byte x,y
+byte pupils_Count
+
+byte array hposp[4] = 53248
+byte array ghost_visible[4] = @ghost_visible
+
+byte array ghost_start_x[4] = @ghost_start_x
+byte array ghost_start_y[4] = @ghost_start_y
+
+byte array ghostx[4] = @ghostx
+byte array ghosty[4] = @ghosty
+
+byte array ghost_mode[4] = @ghost_mode
+byte array ghost_scatter_x[4] = @ghost_scatter_x
+byte array ghost_scatter_y[4] = @ghost_scatter_y
+
+byte array ghost_chase_scatter_index[4] = @ghost_chase_scatter_index
+
+byte array ghost_xy_pf[4] = @ghost_xy_pf
+
+byte array ghost_waitcount[4] = @ghost_waitcount
+byte array ghost_waitfor[4] = @ghost_waitfor
+
+byte array playfield[91] = @playfield
+
+byte array ghost_mode_countdown[4] = @ghost_mode_countdown
+byte array ghost_color[4] = @ghost_color
+
+byte array ghost_approach[4] = @ghost_approach
+
+byte array PCOLR[4]=704 // Schatten von 53266-9
+
+const ANGST_COLOR=$84
+const ANGST_COLOR_WHITE=$8F
+
+// maximalwert fuer ghost_mode_countdown[number] ist 25
+byte array ghost_angst_color[1] = [
+  0,
+  ANGST_COLOR, ANGST_COLOR_WHITE,
+  ANGST_COLOR, ANGST_COLOR_WHITE,
+  ANGST_COLOR, ANGST_COLOR_WHITE,
+  ANGST_COLOR, ANGST_COLOR_WHITE,
+  ANGST_COLOR, ANGST_COLOR_WHITE,
+  // 11.
+  ANGST_COLOR, ANGST_COLOR, ANGST_COLOR, ANGST_COLOR, ANGST_COLOR,
+  ANGST_COLOR, ANGST_COLOR, ANGST_COLOR, ANGST_COLOR, ANGST_COLOR,
+  ANGST_COLOR, ANGST_COLOR, ANGST_COLOR, ANGST_COLOR, ANGST_COLOR
+]
+
+const pupils_look_up=0
+const pupils_look_up_right=1
+const pupils_look_right=2
+const pupils_look_down_right=3
+const pupils_look_down=4
+const pupils_look_down_left=5
+const pupils_look_left=6
+const pupils_look_up_left=7
+
+byte array ghost_animation_number[4] = @ghost_animation_number
+
+byte number = 128
+word animation
+word mark
+
+procedure @incrementGhostAnimation(animation, number)
+begin
+  ghost_animation_number[number] := ghost_animation_number[number] + 1
+  mark := @getwordarray(animation, ghost_animation_number[number])
+  if mark == -2 then
+  begin
+    // Augenaufschlag nur ab und zu
+    if @random256() > 220 then
+     begin
+      ghost_animation_number[number] := ghost_animation_number[number] + 1 // -2 ueberspringen
+     end
+    else
+     begin
+      mark := -1
+     end
+  end
+
+  if mark == -1 then
+  begin
+    ghost_animation_number[number] := 0
+  end
+end
+
+
+word array ghost_animation[@split] = @ghost_animation
+byte array ghost_direction[4] = @ghost_direction
+byte array ghost_pupils[4] = @ghost_pupils
+byte array ghost_move_direction[4] = @ghost_move_direction
+
+byte animation_number
+
+byte ghost_animation_count
+byte direction
+
+// Helper functions to set the direction in which a ghost should go
+procedure move_ghost_right(number)
+begin
+  ghost_move_direction[number] := right
+  ghost_direction[number] := 1
+  if ghost_mode[number] != AUGEN then
+    ghost_animation[number] := adr:@RIGHT_GHOST_ANIMATION
+  else
+    ghost_animation[number] := adr:@right_ghost_empty_animation
+
+  ghost_pupils[number]:= pupils_look_right
+  direction := 'R'
+end
+
+procedure move_ghost_left(number)
+begin
+  ghost_move_direction[number] := left
+  ghost_direction[number] := 0
+  if ghost_mode[number] != AUGEN then
+    ghost_animation[number] := adr:@LEFT_GHOST_ANIMATION
+  else
+    ghost_animation[number] := adr:@left_ghost_empty_animation
+  ghost_pupils[number]:= pupils_look_left
+  direction := 'L'
+end
+
+procedure move_ghost_up(number)
+begin
+  ghost_move_direction[number] := up
+  ghost_direction[number] := 1
+  if ghost_mode[number] != AUGEN then
+    ghost_animation[number] := adr:@RIGHT_GHOST_ANIMATION
+  else
+    ghost_animation[number] := adr:@right_ghost_empty_animation
+
+  ghost_pupils[number]:= pupils_look_up
+  direction := 'U'
+end
+
+procedure move_ghost_down(number)
+begin
+  ghost_move_direction[number] := down
+  ghost_direction[number] := 0
+  if ghost_mode[number] != AUGEN then
+    ghost_animation[number] := adr:@LEFT_GHOST_ANIMATION
+  else
+    ghost_animation[number] := adr:@left_ghost_empty_animation
+
+  ghost_pupils[number]:= pupils_look_down
+  direction := 'D'
+end
+
+byte pupils
+
+byte current_move_direction
+byte array ghost_start_movement[4] = @ghost_start_movement
+
+//
+//                                          OO  OO                         OO    OO
+//                                          OO                             OO
+//  OOO OO   OOOO  OO   OO  OOOO         OOOOO OOO  OOOOO   OOOO   OOOO  OOOOOO OOO   OOOO  OOOOO
+//  OOOOOOO OO  OO OO   OO OO  OO       OO  OO  OO  OO  OO OO  OO OO  OO   OO    OO  OO  OO OO  OO
+//  OO O OO OO  OO OO   OO OOOOOO       OO  OO  OO  OO     OOOOOO OO       OO    OO  OO  OO OO  OO
+//  OO O OO OO  OO  OO OO  OO           OO  OO  OO  OO     OO     OO  OO   OO    OO  OO  OO OO  OO
+//  OO O OO  OOOO    OOO    OOOO         OOOOO OOOO OO      OOOO   OOOO     OOO OOOO  OOOO  OO  OO
+//
+
+procedure move_direction_of_ghost(number)
+local current_move_direction
+begin
+  current_move_direction := ghost_move_direction[number] // left, right, up, down
+
+  if current_move_direction & left == left then
+  begin
+    ghostx[number] := ghostx[number] - 1
+
+    if ghosty[number] == 80 then // n24p8[3] wir befinden uns in der 4. Zeile (links, rechts Uebergang)
+    begin
+      if ghostx[number] < 10 then
+      begin
+        ghost_waitfor[number] := SPEED_50 // speed 50%
+        if ghostx[number] < 2 then // Sonderfall: links raus
+        begin
+          // Ghost erscheint rechts wieder, wir warten 100f
+          ghost_visible[number] := 0
+          ghost_start_movement[number] := 100
+          ghostx[number] := 153
+        end
+      end
+      else if ghostx[number] > 144 then
+      begin
+        ghost_waitfor[number] := SPEED_50 // 50% speed
+      end
+      else
+      begin
+        ghost_waitfor[number] := @getGhostSpeed(game_difficult)
+      end
+    end
+  end
+
+  else if current_move_direction & right == right then
+  begin
+    ghostx[number] := ghostx[number] + 1
+
+    if ghosty[number] == 80 then         // Sonderfall: rechts raus
+    begin
+      if ghostx[number] > 144 then
+      begin
+        ghost_waitfor[number] := SPEED_50 // 50% speed
+        if ghostx[number] > 153 then
+        begin
+          // TODO: Ghost unsichtbar schalten
+          ghost_start_movement[number] := 100
+          ghost_visible[number] := 0
+          ghostx[number] := 2
+        end
+      end
+      else if ghostx[number] < 10 then
+      begin
+        ghost_waitfor[number] := SPEED_50 // 50% speed
+      end
+      else
+      begin
+        ghost_waitfor[number] := @getGhostSpeed(game_difficult)
+      end
+    end
+  end
+
+  else if current_move_direction & up == up then
+  begin
+    ghosty[number] := ghosty[number] - 1 // DONE: up 2x ermoeglichen
+  end
+
+  else if current_move_direction & down == down then
+  begin
+    ghosty[number] := ghosty[number] + 1 // DONE: down 2x ermoeglichen
+  end
+
+
+end
+
+
+byte possible_direction
+byte i
+
+//procedure showDirection(direction)
+//local x
+//begin
+//  x := 0
+//  if direction & left == left then
+//  begin
+//    @printff('LEFT ')
+//    x:=x+5
+//  end
+//
+//  if direction & right == right then
+//  begin
+//    @printff('RIGHT ')
+//    x:=x+6
+//  end
+//
+//  if direction & up == up then
+//  begin
+//    @printff('UP ')
+//    x:=x+3
+//  end
+//
+//  if direction & down == down then
+//  begin
+//    @printff('DOWN ')
+//    x:=x+5
+//  end
+//
+//  for i:=x to 20 do
+//  begin
+//    @printff('%c',32)
+//  end
+//end
+
+byte random
+byte movement
+
+const NO_MORE_MOVE=0
+const MORE_MOVE=1
+
+byte pacmenx = @pacmenx
+byte pacmeny = @pacmeny
+byte pacmen_xy_pf = @pacmen_xy_pf
+byte pacmen_direction = @pacmen_direction
+
+byte current_ghost_xy_pf
+byte goto_xy_pf
+
+byte px, py, pxy
+word dx, dy
+
+word index
+
+byte mode
+byte mode_playload
+
+word xy
+
+
+// Wechsel zwischen SCATTER(lauf in eine Ecke) und CHASE (Angriff)
+byte array chase_scatter[1] = [
+  SCATTER, CHASE,
+
+// TODO: nur zum testen!
+//  SCATTER,SCATTER,
+//  255,
+
+  SCATTER, CHASE,
+  SCATTER, CHASE,
+  SCATTER, CHASE,
+  255 // auf index := 2 zurueck
+]
+
+// Da wir recht dynamisch unterwegs sind, soll hier in Raster-Wechsel angegeben
+// werden, wie lange wir in einem Modus bleiben
+byte array chase_scatter_time[1] = [
+  5,  // Die erste Zahl ist recht kurz, weil wir sie zum verlassen des Hauses verwenden
+  20, // CHASE
+  1,  // SCATTER Zahl ist unwichtig, wird berechnet
+  30, // CHASE
+  1,  // SCATTER
+  30, // CHASE
+  1,  // SCATTER
+  30  // CHASE
+]
+
+//
+//                                                 OO                        OO
+// OOO OO   OOOOO  OO   OO  OOOOO           OOOOOO OO       OOOOO   OOOOO  OOOOOOO
+// OOOOOOO OO   OO OO   OO OO   OO         OO   OO OOOOOO  OO   OO OO        OO
+// OO O OO OO   OO OO   OO OOOOOOO         OO   OO OO   OO OO   OO  OOOOO    OO
+// OO O OO OO   OO  OO OO  OO               OOOOOO OO   OO OO   OO      OO   OO
+// OO O OO  OOOOO    OOO    OOOOO               OO OO   OO  OOOOO   OOOOO     OOOO
+//                                         OOOOOO
+
+byte xy_pf
+
+byte xpf = @pacmen_x_pf
+byte ypf = @pacmen_y_pf
+
+byte pxpf = 129
+byte pypf = 130
+
+byte gxpf = 131
+byte gypf = 132
+
+byte delta_left, delta_right, delta_up, delta_down
+byte directionx, directiony
+byte leftOrRight, upOrDown
+byte delta
+
+byte ghost_chase_scatter_number
+
+byte real_direction
+byte color
+
+byte array @in_augen_mode[4]
+byte array in_augen_mode[4] = @in_augen_mode
+
+procedure @move_ghost(number)
+local possible_direction
+begin
+  // Erst nach kurzer Wartezeit loslaufen
+  // mit ghost_start_movement[number] := x koennen wir einen Ghost einfach mal anhalten
+  if ghost_start_movement[number] > 0 then
+  begin
+    ghost_start_movement[number] := ghost_start_movement[number] - 1
+    return 0
+  end
+
+  // Stotterbremse fuer Ghost
+  ghost_waitcount[number] := ghost_waitcount[number] + 1
+  if ghost_waitcount[number] >= ghost_waitfor[number] then
+  begin
+    ghost_waitcount[number] := 0
+    return 0
+  end
+
+  ghost_visible[number] := 1
+
+  // Position des Geistes pixel genau
+  x := ghostx[number]
+  y := ghosty[number]
+
+  // getPlayfieldXY liefert wenn nicht genau im 3x3 Raster eine 255 zurueck
+  xy_pf := @getPlayfieldXY(x,y)
+
+  if xy_pf == 255 then // Keine Gerade Position, wir bewegen in festgelegter Richtung
+  begin
+    // Die Position ist "ungueltig" oder eher "ungerade", wir bewegen uns einfach weiter
+    move_direction_of_ghost(number)
+    return 0
+  end
+
+
+
+  // Wir befinden uns mit einem Geist an einer geraden Position
+
+  // Position des Geistes im Playfield
+  gxpf := @getPlayfieldX(x)
+  gypf := @getPlayfieldY(y)
+
+  // Switch zwischen CHASE und SCATTER bis mode_countdown 0 erreicht dann wechsel
+  if ghost_mode_countdown[number] > 0 then
+  begin
+    ghost_mode_countdown[number] := ghost_mode_countdown[number] - 1
+  end
+  else
+  begin
+    if ghost_mode[number] == AUGEN then
+    begin
+      @audio_play_augen_canal(4) // Augen Ton abklingen
+    end
+    ghost_chase_scatter_number := ghost_chase_scatter_index[number]
+
+    // wir schalten den Index in chase_scatter[] weiter bis wir auf 255 stossen
+    ghost_chase_scatter_number := ghost_chase_scatter_number + 1
+    if chase_scatter[ghost_chase_scatter_number] == 255 then
+    begin
+      ghost_chase_scatter_number := 2 // zurueck setzen auf 2. Index
+    end
+
+    ghost_mode[number] := chase_scatter[ghost_chase_scatter_number]
+    if ghost_mode[number] == SCATTER then
+    begin
+      // wir beschraenken die SCATTER Time auf die Entfernung
+      ghost_mode_countdown[number] := @abs(gxpf - ghost_scatter_x[number]) + @abs(gypf - ghost_scatter_y[number])
+    end
+    else
+    begin
+      ghost_mode_countdown[number] := chase_scatter_time[ghost_chase_scatter_number]
+    end
+    ghost_chase_scatter_index[number] := ghost_chase_scatter_number
+  end
+
+
+  possible_direction := playfield[xy_pf]                       // moegliche Richtung
+
+  if ghost_mode[number] == SCATTER then
+  begin
+    // Die scatter_number ist nur am Anfang < 2, spaeter immer >= 2
+    if ghost_chase_scatter_number < 2 then
+    begin
+      // Diese Position anlaufen, um das Haus zu verlassen
+      pxpf := 6
+      pypf := 0
+    end
+    else
+    begin
+      // Imaginaere Position fuer die Geister
+      pxpf := ghost_scatter_x[number]
+      pypf := ghost_scatter_y[number]
+    end
+  end
+  else if ghost_mode[number] == ANGST then
+  begin
+    // Der Geist hat ANGST,
+    // wird blau und fluechtet grundsaetzlich in eine
+    // Eckes des Quadranten gegenueber dem Pacmen
+    // TODO: Wie verhindern, das die Geister alle uebereinander liegen?
+    if xpf < 7 then pxpf := 13 else pxpf := 0
+    if ypf < 4 then pypf := 7 else pypf := 1
+
+    color := ghost_angst_color[ghost_mode_countdown[number]]
+    if color == 0 then color := ghost_color[number]
+    PCOLR[number] := color
+  end
+  else if ghost_mode[number] == AUGEN then
+  begin
+    in_augen_mode[number] := in_augen_mode[number] + 1
+    if game_level < 20 and gxpf == 6 and gypf == 3 then
+    begin
+      // Im AUGEN-Mode home coming point erreicht, direkt vor dem Eingang, der
+      // eigentlich gesperrt ist, das uebergehen wir durch hartes bewegen.
+      move_ghost_down(number)
+      ghosty[number] := ghosty[number] + 1
+      return 0
+    end
+    else if game_level < 20 and gxpf == 6 and gypf == 4 then
+    begin
+      // Im AUGEN-Mode Ziel im Haus erreicht
+      // wir warten einen Augenblick, dann als normaler Geist wieder raus
+      ghost_start_movement[number] := @getGhostBackWaitFor(game_difficult) // wait some time
+      ghost_mode[number] := SCATTER
+      @audio_play_augen_canal(4) // Augen Ton abklingen
+
+      ghost_mode_countdown[number] := 1
+      PCOLR[number] := ghost_color[number]
+
+      if ghost_move_direction[number] == left then
+      begin
+        move_ghost_left(number)
+      end
+      else
+      begin
+        move_ghost_right(number)
+      end
+    end
+    else
+    begin
+      // Im AUGEN-Mode coming home, Ziel ist der Hauseingang
+      // Es bestand die Moeglichkeit, das sich die Augen festgefahren
+      // haben, deshalb ein Zaehler
+      if in_augen_mode[number] < 16 then
+      begin
+        pxpf := 6    // Home aufsuchen
+        pypf := 3
+      end
+      else if in_augen_mode[number] < 26 then
+      begin
+        pxpf := 13    // in eine Ecke gehen, weil es zu lange dauerte
+        pypf := 0
+      end
+      else if in_augen_mode[number] < 36 then
+      begin
+        pxpf := 0     // andere Ecke aufsuchen
+        pypf := 7
+      end
+      else
+      begin
+        in_augen_mode[number] := 0 // wieder Home aufsuchen
+      end
+    end
+  end
+  else
+  begin
+    // Behandlung der Geist naehert sich Pacmen Strategie
+    if ghost_approach[number] == EXACT_POSITION then
+    begin
+      // Direkte Position von Pacmen anlaufen
+      pxpf := xpf
+      pypf := ypf
+    end
+    else if ghost_approach[number] == FRONT_POSITION then
+    begin
+      // versuchen vor den Pacmen zu kommen
+      if pacmen_direction == up then
+      begin
+        pypf := ypf - 2
+        pxpf := xpf - 2
+      end
+
+      else if pacmen_direction == down then
+      begin
+        pypf := ypf + 2
+        pxpf := xpf + 2
+      end
+
+      else if pacmen_direction == left then
+        pxpf := xpf - 2
+
+      else if pacmen_direction == right then
+        pxpf := xpf + 2
+
+      else
+      begin
+        // Pacmen bewegt sich gerade nicht, exakte Position nehmen
+        pxpf := xpf
+        pypf := ypf
+      end
+
+      // da wir als byte nicht < 0 werden koennen,
+      if pxpf > 20 then pxpf := 0
+      if pypf > 20 then pypf := 0
+    end
+    else if ghost_approach[number] == DIAGONAL_POSITION then
+    begin
+      pxpf := xpf*2 - gxpf
+      pypf := ypf*2 - gypf
+
+      if pxpf > 20 then pxpf := 0
+      if pypf > 20 then pypf := 0
+    end
+    else if ghost_approach[number] == CIRCLE_POSITION then
+    begin
+      pxpf := xpf
+      pypf := ypf
+
+      delta := @abs(xpf - gxpf) + @abs(ypf - gypf)
+      if delta < 5 then
+      begin
+        if xpf < 7 then pxpf := 0 else pxpf := 13
+        if ypf < 4 then pypf := 1 else pypf := 7
+      end
+    end
+
+  end
+
+
+  ghost_xy_pf[number] := xy_pf
+
+  current_move_direction := ghost_move_direction[number]       // Aktuelle Richtung
+
+//  if debug==1 then
+//  begin
+//    @fast_gotoxy(26,22)
+//    if ghost_mode[number] == SCATTER then
+//      @printff('SCATTER')
+//
+//    if ghost_mode[number] == CHASE then
+//      @printff('CHASE  ')
+//
+//    if ghost_mode[number] == ANGST then
+//      @printff('ANGST  ')
+//
+//    @printff(' [%d,%d] ',pxpf,pypf)
+//
+//    showDirection(current_move_direction)
+//    @fast_gotoxy(20,22)
+//    // showDirection(possible_direction)
+//    @printff('APPROACH:%d  ', ghost_approach[number])
+//    @printff('DELTA:%d  ', delta)
+//
+//    @fast_gotoxy(0,23)
+//    showDirection(current_move_direction xor $0f)
+//  end
+
+  // Berechnen der naechsten Direction
+
+  // wir kennen Pacmens Position pxpf, pypf
+
+  delta_left := $ff
+  delta_right := $ff
+  delta_down := $ff
+  delta_up := $ff
+  leftOrRight := $ff
+  upOrDown := $ff
+
+  // wir kennen die Position vom Geist (gxpf, gypf)
+
+  if possible_direction & left == left then
+  begin
+    delta_left := @abs(gxpf - 1 - pxpf) + @abs(gypf - pypf) * 2
+//    delta_left := @hypot(gxpf - 1, pypf)
+  end
+
+  if possible_direction & right == right then
+  begin
+    delta_right := @abs(gxpf + 1 - pxpf) + @abs(gypf - pypf) * 2
+//    delta_right := @hypot(gxpf + 1, pxpf)
+  end
+
+  if possible_direction & up == up then
+  begin
+    delta_up := @abs(gxpf - pxpf) + @abs(gypf - 1 - pypf) * 2
+//    delta_up := @hypot(gxpf, pxpf - 1)
+  end
+
+  if possible_direction & down == down then
+  begin
+    delta_down := @abs(gxpf - pxpf) + @abs(gypf + 1 - pypf) * 2
+  end
+
+//  if debug==1 then
+//  begin
+//    @printff('L:%d R:%d U:%d D:%d ', delta_left, delta_right, delta_up, delta_down)
+//  end
+
+  // TODO: ware es hilfreich hier die aktuelle Richtung mit einzubeziehen?
+  directionx := '-'
+  if delta_left < delta_right then
+  begin
+    // Left
+    if delta_left != 255 then  // Geist kann nach links
+    begin
+      directionx := 'L'
+      leftOrRight := delta_left
+    end
+  end
+  else
+  begin
+    // right
+    if delta_right != 255 then
+    begin
+      directionx := 'R'
+      leftOrRight := delta_right
+    end
+  end
+
+
+  directiony := '-'
+  if delta_up < delta_down then
+  begin
+    // up
+    if delta_up != 255 then
+    begin
+      directiony := 'U'
+      upOrDown := delta_up
+    end
+  end
+  else
+  begin
+    // down
+    if delta_down != 255 then
+    begin
+      directiony := 'D'
+      upOrDown := delta_down
+    end
+  end
+
+  if leftOrRight < upOrDown then
+  begin
+    // left or right
+    direction := directionx
+  end
+  else
+  begin
+    // up or down
+    direction := directiony
+  end
+
+//  if debug==1 then
+//  begin
+//    @fast_gotoxy(27,23)
+//    @printff('NEXT:%c', direction)
+//  end
+
+  // Die Direction gibt an, in welche Richtung wir laufen wollen
+  // ist die aktuelle Richtung aber exakt das Gegenteil (U-D, L-R)
+  // versuchen wir es zuerst mit Richtungswechsel ortogonal
+  //
+
+  real_direction := 0
+
+  if direction == 'U' then
+  begin
+    // wir sollen hoch gehen
+    if current_move_direction & down == down then
+    begin
+      // die alte Richtung war aber runter, also erstmal links/rechts probieren
+      if directionx == 'R' then
+        real_direction := 'R'
+      else if directionx == 'L' then
+        real_direction := 'L'
+      else
+        if possible_direction & down == down then
+          real_direction := 'D'
+        else
+          // nur im Notfall gehen wir wieder hoch
+          real_direction := 'U'
+    end
+    else
+    begin
+      real_direction := 'U'
+    end
+  end
+
+  if direction == 'D' then
+  begin
+    // wir sollen runter gehen
+    if current_move_direction & up == up then
+    begin
+      // die alte Richtung war aber hoch, also erstmal links/rechts probieren
+      if directionx == 'R' then
+        real_direction := 'R'
+      else if directionx == 'L' then
+        real_direction := 'L'
+      else
+        if possible_direction & up == up then
+          real_direction := 'U'
+        else
+        // nur im Notfall gehen wir wieder runter
+          real_direction := 'D'
+    end
+    else
+    begin
+      real_direction := 'D'
+    end
+  end
+
+  if direction == 'L' then
+  begin
+    // wir sollen links gehen
+    if current_move_direction & right == right then
+    begin
+      // die alte Richtung war aber rechts, also erstmal hoch/runter probieren
+      if directiony == 'U' then
+        real_direction := 'U'
+      else if directiony == 'D' then
+        real_direction := 'D'
+      else
+        if possible_direction & right == right then
+          real_direction := 'R'
+        else
+          // nur im Notfall gehen wir wieder nach links
+          real_direction := 'L'
+    end
+    else
+    begin
+      real_direction := 'L'
+    end
+  end
+
+  if direction == 'R' then
+  begin
+    // wir sollen rechts gehen
+    if current_move_direction & left == left then
+    begin
+      // die alte Richtung war aber links,
+      if directiony == 'U' then
+        real_direction := 'U'
+      else if directiony == 'D' then
+        real_direction := 'D'
+      else
+        if possible_direction & left == left then
+          real_direction := 'L'
+        else
+        // nur im Notfall gehen wir wieder nach rechts
+          real_direction := 'R'
+    end
+    else
+    begin
+      real_direction := 'R'
+    end
+  end
+
+  if real_direction == 'L' then move_ghost_left(number)
+  if real_direction == 'R' then move_ghost_right(number)
+  if real_direction == 'U' then move_ghost_up(number)
+  if real_direction == 'D' then move_ghost_down(number)
+
+//  if debug==1 then
+//  begin
+//    @printff(' REAL:%c', direction)
+//    // if @getchar() == 27 then game_mode := MODE_ABBRUCH
+//  end
+
+  move_direction_of_ghost(number)
+end
+
+
+//
+//   OO          OO    OO                OO                     OO
+//                     OO                OO                     OO
+//  OOO  OOOOO  OOO  OOOOOO        OOOOO OOOOO   OOOO   OOOO  OOOOOO  OOOO
+//   OO  OO  OO  OO    OO         OO  OO OO  OO OO  OO OO       OO   OO
+//   OO  OO  OO  OO    OO         OO  OO OO  OO OO  OO  OOOO    OO    OOOO
+//   OO  OO  OO  OO    OO          OOOOO OO  OO OO  OO     OO   OO       OO
+//  OOOO OO  OO OOOO    OOO           OO OO  OO  OOOO   OOOO     OOO  OOOO
+//                                OOOOO
+
+byte speed
+
+procedure @init_ghosts()
+begin
+  @clearbyte($b400, 1024)
+  pupils_count := 0
+  for number := 0 to 3 do
+  begin
+    ghost_animation_number[number] := 0
+    ghostx[number] := ghost_start_x[number]
+    ghosty[number] := ghost_start_y[number]
+    ghost_waitcount[number] := 0
+    ghost_chase_scatter_index[number] := 0
+    ghost_mode_countdown[number] := chase_scatter_time[0]
+    ghost_mode[number] := SCATTER
+    PCOLR[number] := ghost_color[number]
+    ghost_visible[number] := 1
+    in_augen_mode[number] := 0
+  end
+
+  // Die Geister stehen in der Startposition, hier Richtung festlegen
+  move_ghost_right(0)
+  move_ghost_right(1)
+  move_ghost_left(2)
+  move_ghost_left(3)
+
+//  @init_copyghost()
+
+  ghost_animation_count := 0
+
+// TODO: Compiler update
+// setze ab position 0 alle Werte ghost_start_movement[0] := [64, 127, 194, 252]
+// TODO: Das hier dauert zu lange, schneller machen, dabei die richtige Verteilung beruecksichtigen
+  ghost_start_movement[0]:= 64 // 64
+  ghost_start_movement[1]:= 127 // 127
+  ghost_start_movement[2]:= 194 // 194
+  ghost_start_movement[3]:= 252 // 252
+
+  speed := @getGhostSpeed(game_difficult)
+  ghost_waitfor[0] := speed
+  ghost_waitfor[1] := speed
+  ghost_waitfor[2] := speed
+  ghost_waitfor[3] := speed
+
+// Andere Werte, die wir verwenden wollen
+// :=2  // 50%  1/2
+// :=3  // 66%  2/3
+// :=4  // 75%  3/4
+// :=5  // 80%  4/5
+// :=7  // 85% 6/7
+// :=10 // 90% 9/10
+// :=20 // 95% 20/21
+// :=49 // 98% 49/50
+// :=255 // 99.6% 254/255
+
+// Nur initialisieren, nicht bewegen und nicht zeichnen.
+end
+
+procedure @animateAllGhosts()
+begin
+  ghost_animation_count := ghost_animation_count + 1
+  if ghost_animation_count > 2 then
+  begin
+    ghost_animation_count := 0
+
+    for i:=0 to 3 do
+    begin
+      @incrementGhostAnimation(ghost_animation[i], i)
+    end
+  end
+end
+
+procedure @ghosts_in_angst()
+begin
+  for i:=0 to 3 do
+  begin
+    if ghost_mode[i] != AUGEN then
+    begin
+      ghost_mode[i] := ANGST
+      PCOLR[i]:=ANGST_COLOR // blue
+
+      ghost_mode_countdown[i] := @getAngstTime(game_difficult)
+      ghost_waitfor[i] := SPEED_50
+    end
+  end
+end

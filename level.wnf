@@ -1,0 +1,134 @@
+include lvl:level
+
+// Hier legen wir Funktionen ab, die je nach Level andere Werte liefern sollen
+// TODO: noch nicht fertig
+
+byte level
+
+const sec_3 = 20
+const sec_4 = 27
+const sec_5 = 34
+const sec_6 = 41
+const sec_7 = 48
+const sec_8 = 55
+const sec_9 = 62
+const sec_10 = 69
+const sec_11 = 75
+
+// Was die Werte in den folgenden Arrays sagen
+// speed pacmen
+// speed ghosts
+// wait in sec until new collectible
+// wait in sec how long a collectible is viewable
+// Angst Time
+// wait in frames, until Ghost comes back
+byte array godmode[1] =     [speed_66, speed_50, sec_3,  sec_11, 25, 150]
+byte array easy_peasy[1] =  [speed_75, speed_66, sec_4,  sec_11, 20, 200]
+byte array simple[1] =      [speed_80, speed_66, sec_5,  sec_10, 18, 175]
+byte array easy[1] =        [speed_85, speed_75, sec_6,  sec_10, 16, 150]
+byte array practicable[1] = [speed_90, speed_80, sec_7,  sec_9,  14, 125]
+byte array provocative[1] = [speed_95, speed_85, sec_8,  sec_9,  12, 100]
+byte array difficult[1] =   [speed_98, speed_90, sec_9,  sec_8,  10,  75]
+byte array complicated[1] = [speed_90, speed_95, sec_10, sec_8,   9,  50]
+byte array suicide[1] =     [speed_85, speed_98, sec_11, sec_7,   8,  25]
+
+byte array simple_high[1] = [speed_90, speed_75, sec_5,  sec_10, 18, 175]
+byte array bomb_man[1]  =   [speed_90, speed_75, sec_5,  sec_10,  2,  35]
+
+word array difficult_list[9] = [
+  godmode,
+  easy_peasy,
+  simple,
+  easy,
+  practicable,
+  provocative,
+  difficult,
+  complicated,
+  suicide,
+  simple_high,
+  bomb_man
+]
+
+word mode_difficult
+
+procedure @init_difficult()
+begin
+  mode_difficult := difficult_list[game_difficult]
+end
+
+
+function @getPacmenSpeed(level)
+begin
+//  return @getbyte(mode_difficult) // sollte nicht <2 sein!
+  return @mem[mode_difficult] // sollte nicht <2 sein!
+end
+
+
+function @getGhostSpeed(level)
+begin
+  // Geschwindigkeiten der Geister, VORSICHT, nicht viel schneller als Pacmen machen!
+//  return @getbyte(mode_difficult+1)
+  return @mem[mode_difficult+1]
+//  return speed_95
+end
+
+
+// Zeit bis neuer Collectible erscheint
+// TODO: an die Anzahl der eingesammelten Cookies haengen?
+function @getCollectibleCountdown(level)
+begin
+  // ~1800f is need to clean a level -> 36s
+  //
+  if debug == 1 then
+  begin
+    // TODO: 2022-04-17 nur zum testen
+    return 100
+  end
+
+//  return @getbyte(mode_difficult+2) * 8
+  return @mem[mode_difficult+2] * 8
+end
+
+// Zeit wie lange ein Collectible sichtbar ist
+function @getCollectibleWaitFor(level)
+begin
+//  return @getbyte(mode_difficult+3) * 8
+  return @mem[mode_difficult+3] * 8
+end
+
+
+function @getAngstTime(level)
+begin
+//  return @getbyte(mode_difficult + 4)
+  return @mem[mode_difficult + 4]
+end
+
+function @getGhostBackWaitFor(level)
+begin
+//  return @getbyte(mode_difficult + 5)
+  return @mem[mode_difficult + 5]
+end
+
+word array difficult_string_list[9] = [
+'GODMODE    ',
+'EASY-PEASY ',
+'SIMPLE     ',
+'EASY       ',
+'PRACTICABLE',
+'PROVOCATIVE',
+'DIFFICULT  ',
+'COMPLICATED',
+'SUICIDE    ',
+'SIMPLE-HIGH',  // more fun, simple but pacmen with more speed
+'BOMB-MAN   '
+]
+
+procedure @showDifficult(level)
+begin
+  @printff('\1SELECT : %s', difficult_string_list[level])
+end
+
+procedure @showLevel(level)
+begin
+  @printff('\2OPTION : LEVEL-%d ', level)
+end

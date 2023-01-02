@@ -1,0 +1,326 @@
+include pt:pacintro
+
+// Pacmen Title Intro
+// Alle Routinen, die zur Anzeige des Intros noetig sind
+
+byte consol=$D01F
+
+byte i
+byte value
+byte ch = 764
+
+//byte colbk = $d01a
+byte desired_level = @desired_level
+
+procedure @show_title()
+begin
+
+  // Nicht die Augen loeschen
+//  for i:=0 to 239 do
+//  begin
+//    value := @GETBYTEARRAY($bdA8, i)
+//    if value < 48 then
+//    begin
+//      @SETBYTEARRAY($bdA8, i, 32)
+//    end
+//  end
+
+  // PACMEN on top
+  @init_fastscreen(adr:@pacmen_title_text)
+
+// PACMEN-evolution und ein paar Sterne!
+//  @printff('\0  BY LARS LANGHANS  ')
+  @printff('\0 BY THE ATARI TEAM  ')
+  @printff('\1      CDW 2022      ')
+  @printff('\2PRESS FIRE TO START ')
+//  @printff('\3___ _  _   _    _   ')
+  @printff('\31UP:')
+  @print_score_in_title()
+  @fast_gotox(12)
+  @printff('\3  _  ___')
+
+// drei Playfieldzeilen mit bewegendem Pacmen
+  @fast_gotoxy(0,4)
+  @showDifficult(game_difficult)
+  @fast_gotoxy(0,5)
+  @showLevel(desired_level)
+  @fast_gotoxy(0,6)
+//  @printff('\3   _    _   _  _ ___')
+  @printff('\3___  _ HIGH:')
+  @print_highscore_in_title()
+//  @fast_gotoxy(0,7)
+//  @printff('\0ABBUC - CONTEST 2022')
+
+end
+
+byte prell
+byte key
+
+function consolekey()
+begin
+  if prell > 0 then
+  begin
+    prell := prell - 1
+    if consol != 7 then prell := prell + 1
+    return 0
+  end
+
+  if consol == 3 then // Option
+  begin
+    key := 3
+    prell := 5
+  end
+  if consol == 5 then // Select
+  begin
+    key := 2
+    prell := 5
+  end
+  if consol == 6 then // start
+  begin
+    key := 1
+    prell := 5
+  end
+  return key
+end
+
+byte pacmenx = @pacmenx
+byte pacmeny = @pacmeny
+
+byte pacmen_direction = @pacmen_direction
+byte pacmen_start_x = @pacmen_start_x
+byte pacmen_start_y = @pacmen_start_y
+
+byte xpf,ypf
+
+byte array playfield[91] = @playfield
+
+procedure @init_title()
+begin
+  @load_background(1)
+  @init_playfield()
+
+  playfield[45] := playfield[45] ! %10000100
+
+  @init_pacmen()
+  pacmen_direction := 0
+  prell:=0
+end
+
+//const up=   %00000001  // Verschaltung im Uhrzeigersinn
+//const right=%00000010
+//const down= %00000100
+//const left= %00001000
+//const guilty = %10000000
+
+byte array pacmen_ferngelenkt[1] = [
+  %10001000, // left
+  %10000100, // down
+  %10001000, // left
+  %10000001, // up
+//  %10000001, // up
+  %10001000, // left
+  %10000100, // down
+//  %10000100, // down
+  %10001000, // left
+  %10000001, // up
+  %10001000, // left
+  %10001000, // left
+  %10001000, // left
+  %10001000, // left
+  %10000001, // up
+  %10001000, // left
+  %10001000, // left
+  %10000100, // down
+  %10001000, // left
+  %10001000, // left
+  %10000100, // down
+
+  %10000001, // up
+  %10000010, // right
+  %10000001, // up
+  %10000100, // down
+  %10000010, // right
+  %10000100, // down
+  %10000001, // up
+  %10000010, // right
+  %10000001, // up
+  %10000010, // right
+  %10000010, // right
+  %10001000, // left
+  %10000100, // down
+  %10000100, // down
+  %10000010, // right
+  %10001000, // left
+  %10000001, // up
+  %10000010, // right
+  %10000010, // right
+  %10000001, // up
+  %10000100, // down
+  %10000010, // right
+  %10000010, // right
+  %10000100, // down
+  %10000010, // right
+  %10000001, // up
+  %10000001, // up
+  %10000010, // right
+  %10000100, // down
+  %10000100, // down
+  %10000010, // right
+  %10000001, // up
+  %10000001, // up
+  %10000100, // down
+  %10000010, // right
+  %10000100, // down
+  %10000001, // up
+  %10000001, // up
+  %10000100, // down
+  $ff
+]
+
+byte ferngelenkt_index
+
+function gesteuert()
+begin
+  value := pacmen_ferngelenkt[ferngelenkt_index]
+  ferngelenkt_index := ferngelenkt_index + 1
+
+  if value == $ff then
+  begin
+// TODO!    @clear_ghosts()
+    @fadeout()
+
+    @init_title()                 // Image neu initialisieren
+
+    @fadein()
+    @init_ghosts()
+//    @fillbyte($41,$b41f,2)
+
+    ferngelenkt_index := 0
+    value := pacmen_ferngelenkt[ferngelenkt_index]
+  end
+  return value
+end
+
+byte keycode
+
+procedure checkKey()
+begin
+  keycode := CH
+  if keycode != $ff then
+  begin
+    CH := 255              // wenn key != 255 CH auf 255 setzen (empfohlen)
+  // key := translateKeyCode[keycode]
+    key := @getKeyFromKeyCode(keycode)
+  end
+end
+
+byte underPosition
+byte pacmen_xy
+
+byte waitcount, waitfor
+
+procedure @title_loop()
+begin
+  @init_pacmen_move_left()
+//  @draw_pacmen()
+//  for i:=0 to 3 do
+//  begin
+//    @sleep(50)
+//    @draw_ghost(i)
+//  end
+//  @sleep(50)
+
+  @show_title()
+  ferngelenkt_index := 0
+
+  // fuer micro ruckler, damit laeuft der Pacmen hier etwas langsamer als jede 1f
+  waitfor := 3
+  waitcount := 0
+
+  key := 0
+
+  while 1 == 1 do
+  begin
+    @move_pacmen(adr:gesteuert)
+    @setAndAnimatePacmen()
+
+    xpf := @getPlayfieldX(pacmenx)
+    ypf := @getPlayfieldY(pacmeny)
+
+    pacmen_xy := @getPlayfieldXY(pacmenx, pacmeny)
+
+    if pacmen_xy != 255 then
+    begin
+      underPosition := @getCookie(xpf, ypf)
+      // @setCookie(xpf, ypf, 0)
+//      if underposition == 38 then
+//      begin
+//        @init_pacmen_move_right()
+//      end
+    end
+
+    if pacmen_direction & right == right and pacmenx > 148 then
+    begin
+      pacmen_direction := 0
+    end
+
+    @animateAllGhosts()
+
+    @draw_ghost(0)
+    @draw_ghost(1)
+    @draw_ghost(2)
+    @draw_ghost(3)
+
+    key := consolekey()
+
+    if key == 1 then break // start is bit 0
+
+    if key == 2 then // select key
+    begin
+      game_difficult := game_difficult + 1
+      if game_difficult > max_game_difficult then game_difficult := 0
+      @fast_gotoxy(0,4)
+      @showDifficult(game_difficult)
+    end
+
+    if key == 3 then // option key
+    begin
+      desired_level := desired_level + 1
+      if desired_level > max_game_level then desired_level := 1
+      @fast_gotoxy(0,5)
+      @showLevel(desired_level)
+    end
+
+    key := 0
+
+    if @strig(0) == 0 then break // fire pressed
+
+    checkKey()
+
+//    if key == 28 and waitfor > 0 then
+//    begin
+//      waitfor := waitfor - 1
+//      @fast_gotoxy(0,4)
+//      @printff('%d ', waitfor)
+//      key := 0
+//    end
+//    if key == 29 and waitfor < 60 then
+//    begin
+//      waitfor := waitfor + 1
+//      @fast_gotoxy(0,4)
+//      @printff('%d ', waitfor)
+//      key := 0
+//    end
+
+    @waitline(87)
+//    @backcolorline(15)
+
+    waitcount := waitcount + 1
+    if waitcount >= waitfor then
+    begin
+      @waitline(86)
+      waitcount := 0
+    end
+  end
+
+end
