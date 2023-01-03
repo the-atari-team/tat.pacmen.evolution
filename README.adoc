@@ -12,9 +12,11 @@ endif::[]
 image::atari000.png[]
 image::atari001.png[]
 
-Here you find the main sources of the Atari 8bit _The Pacmen evolution_.
+Here you find the main sources of the Atari 8bit Game _The Pacmen evolution_.
 
-To simple start the game, take the ATR image file from the release sub-folder.
+It runs on every https://de.wikipedia.org/wiki/Atari_800[Atari 8bit computer] with at least 48kb RAM.
+
+To simply start the game, take the ATR image file from the release sub-folder. And use an emulator like atari800 or Altirra. (Links are below)
 
 == Licenses
 Some stuff here is downloaded from AtariWiki and is licensed under
@@ -36,14 +38,18 @@ You need some stuff for build from scratch
 * **OpenJDK 11**
 * https://github.com/the-atari-team/lla.xldir.disktool[**lla.xldir.disktool**]
 ** for read/write access to ATR disk images
+** get the _ready to use_ xldir.jar out of the https://github.com/the-atari-team/lla.xldir.disktool/releases/download/latest/xldir.jar[release development build]
 * https://github.com/the-atari-team/wnf.compiler[**wnf.compiler**]
 ** to compile .wnf files to 6502 assembler
+** get the _ready to use_ wnf-compiler.jar out of the https://github.com/the-atari-team/wnf.compiler/releases/download/latest/wnf-compiler.jar[release development build]
 * https://github.com/the-atari-team/tat.packer[**tat.packer**]
 ** to compress the level data by RLE & Huffman
-* https://atari.miribilist.com/atasm/[**atasm**] the 6502-cross-assembler, to create COM-files out of ASM-files,
-because the wnf.compiler only creates assembler files.
+** get the _ready to use_ xl-packer.jar out of the https://github.com/the-atari-team/tat.packer/releases/download/latest/xl-packer.jar[release development build]
+
+* https://github.com/CycoPH/atasm[**atasm**] the 6502-cross-assembler, to create COM-files out of ASM-files,
+because the wnf.compiler only creates assembler files. You need at least Version 1.18
 * the http://www.emulators.com/freefile/pcxf380.zip[**ATARIXL.ROM**], copy the XL-OS to `../firmware` folder.
 * https://atari800.github.io/index.html[**atari800**] Emulator is need. Make it available via $PATH variable.
 
-If you would like to debug the code, use the https://virtualdub.com/altirra.html[**Altirra**] and start `make debug` on console. In the Makefile find in line 5 the ALTIRRA= expresion, set it to your installed Altirra version. Here you can see how to use it with wine.
+If you would like to debug the code, use the https://virtualdub.com/altirra.html[**Altirra**] Emulator and start `make debug` on console. In the Makefile find in line 5 the ALTIRRA= expression, set it to your installed Altirra version. Here you can see how to use it with Wine.
 
