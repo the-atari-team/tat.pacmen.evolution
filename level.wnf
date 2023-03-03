@@ -110,25 +110,25 @@ begin
 end
 
 word array difficult_string_list[9] = [
-'GODMODE    ',
-'EASY-PEASY ',
-'SIMPLE     ',
-'EASY       ',
-'PRACTICABLE',
-'PROVOCATIVE',
-'DIFFICULT  ',
-'COMPLICATED',
-'SUICIDE    ',
-'SIMPLE-HIGH',  // more fun, simple but pacmen with more speed
-'BOMB-MAN   '
+"GODMODE    ",
+"EASY-PEASY ",
+"SIMPLE     ",
+"EASY       ",
+"PRACTICABLE",
+"PROVOCATIVE",
+"DIFFICULT  ",
+"COMPLICATED",
+"SUICIDE    ",
+"SIMPLE-HIGH",  // more fun, simple but pacmen with more speed
+"BOMB-MAN   "
 ]
 
 procedure @showDifficult(level)
 begin
-  @printff('\1SELECT : %s', difficult_string_list[level])
+  @printff("\1SELECT : %s", difficult_string_list[level])
 end
 
 procedure @showLevel(level)
 begin
-  @printff('\2OPTION : LEVEL-%d ', level)
+  @printff("\2OPTION : LEVEL-%d ", level)
 end

@@ -11,7 +11,7 @@ begin
   begin
     @fast_gotoxy(20,22)
     // zu teuer!
-    // @printff('%x%x%x%x0', bcd_current_score4, bcd_current_score3, bcd_current_score2, bcd_current_score1)
+    // @printff("%x%x%x%x0", bcd_current_score4, bcd_current_score3, bcd_current_score2, bcd_current_score1)
     // also mal eben selbst in Assembler runtergeschrieben
     @print_score()
 
@@ -23,7 +23,7 @@ begin
         @fast_gotox(32)
         @print_highscore()
         // zu teuer!
-        // @printff('%x%x%x%x0', bcd_highscore4, bcd_highscore3, bcd_highscore2, bcd_highscore1)
+        // @printff("%x%x%x%x0", bcd_highscore4, bcd_highscore3, bcd_highscore2, bcd_highscore1)
       end
     end
     @remember_current_score()

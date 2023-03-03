@@ -29,15 +29,15 @@ begin
   @init_fastscreen(adr:@pacmen_title_text)
 
 // PACMEN-evolution und ein paar Sterne!
-//  @printff('\0  BY LARS LANGHANS  ')
-  @printff('\0 BY THE ATARI TEAM  ')
-  @printff('\1      CDW 2022      ')
-  @printff('\2PRESS FIRE TO START ')
-//  @printff('\3___ _  _   _    _   ')
-  @printff('\31UP:')
+//  @printff("\0  BY LARS LANGHANS  ")
+  @printff("\0 BY THE ATARI TEAM  ")
+  @printff("\1      CDW 2022      ")
+  @printff("\2PRESS FIRE TO START ")
+//  @printff("\3___ _  _   _    _   ")
+  @printff("\31UP:")
   @print_score_in_title()
   @fast_gotox(12)
-  @printff('\3  _  ___')
+  @printff("\3  _  ___")
 
 // drei Playfieldzeilen mit bewegendem Pacmen
   @fast_gotoxy(0,4)
@@ -45,11 +45,11 @@ begin
   @fast_gotoxy(0,5)
   @showLevel(desired_level)
   @fast_gotoxy(0,6)
-//  @printff('\3   _    _   _  _ ___')
-  @printff('\3___  _ HIGH:')
+//  @printff("\3   _    _   _  _ ___")
+  @printff("\3___  _ HIGH:")
   @print_highscore_in_title()
 //  @fast_gotoxy(0,7)
-//  @printff('\0ABBUC - CONTEST 2022')
+//  @printff("\0ABBUC - CONTEST 2022")
 
 end
 
@@ -301,14 +301,14 @@ begin
 //    begin
 //      waitfor := waitfor - 1
 //      @fast_gotoxy(0,4)
-//      @printff('%d ', waitfor)
+//      @printff("%d ", waitfor)
 //      key := 0
 //    end
 //    if key == 29 and waitfor < 60 then
 //    begin
 //      waitfor := waitfor + 1
 //      @fast_gotoxy(0,4)
-//      @printff('%d ', waitfor)
+//      @printff("%d ", waitfor)
 //      key := 0
 //    end
 

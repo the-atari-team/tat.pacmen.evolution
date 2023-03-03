@@ -249,31 +249,31 @@ byte i
 //  x := 0
 //  if direction & left == left then
 //  begin
-//    @printff('LEFT ')
+//    @printff("LEFT ")
 //    x:=x+5
 //  end
 //
 //  if direction & right == right then
 //  begin
-//    @printff('RIGHT ')
+//    @printff("RIGHT ")
 //    x:=x+6
 //  end
 //
 //  if direction & up == up then
 //  begin
-//    @printff('UP ')
+//    @printff("UP ")
 //    x:=x+3
 //  end
 //
 //  if direction & down == down then
 //  begin
-//    @printff('DOWN ')
+//    @printff("DOWN ")
 //    x:=x+5
 //  end
 //
 //  for i:=x to 20 do
 //  begin
-//    @printff('%c',32)
+//    @printff("%c",32)
 //  end
 //end
 
@@ -600,21 +600,21 @@ begin
 //  begin
 //    @fast_gotoxy(26,22)
 //    if ghost_mode[number] == SCATTER then
-//      @printff('SCATTER')
+//      @printff("SCATTER")
 //
 //    if ghost_mode[number] == CHASE then
-//      @printff('CHASE  ')
+//      @printff("CHASE  ")
 //
 //    if ghost_mode[number] == ANGST then
-//      @printff('ANGST  ')
+//      @printff("ANGST  ")
 //
-//    @printff(' [%d,%d] ',pxpf,pypf)
+//    @printff(" [%d,%d] ",pxpf,pypf)
 //
 //    showDirection(current_move_direction)
 //    @fast_gotoxy(20,22)
 //    // showDirection(possible_direction)
-//    @printff('APPROACH:%d  ', ghost_approach[number])
-//    @printff('DELTA:%d  ', delta)
+//    @printff("APPROACH:%d  ", ghost_approach[number])
+//    @printff("DELTA:%d  ", delta)
 //
 //    @fast_gotoxy(0,23)
 //    showDirection(current_move_direction xor $0f)
@@ -658,7 +658,7 @@ begin
 
 //  if debug==1 then
 //  begin
-//    @printff('L:%d R:%d U:%d D:%d ', delta_left, delta_right, delta_up, delta_down)
+//    @printff("L:%d R:%d U:%d D:%d ", delta_left, delta_right, delta_up, delta_down)
 //  end
 
   // TODO: ware es hilfreich hier die aktuelle Richtung mit einzubeziehen?
@@ -717,7 +717,7 @@ begin
 //  if debug==1 then
 //  begin
 //    @fast_gotoxy(27,23)
-//    @printff('NEXT:%c', direction)
+//    @printff("NEXT:%c", direction)
 //  end
 
   // Die Direction gibt an, in welche Richtung wir laufen wollen
@@ -826,7 +826,7 @@ begin
 
 //  if debug==1 then
 //  begin
-//    @printff(' REAL:%c', direction)
+//    @printff(" REAL:%c", direction)
 //    // if @getchar() == 27 then game_mode := MODE_ABBRUCH
 //  end
 

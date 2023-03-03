@@ -1,7 +1,7 @@
 # Makefile to build and start The Pacmen-evolution
-CC=wnfc
+CC=./compiler/bin/wnfc
 ASM=atasm
-PACKER=xl-packer
+PACKER=./compiler/bin/xl-packer
 ALTIRRA=wine /home/lars/.wine/drive_c/atarixl.software/AtariXL_400/Altirra-410b5.exe
 
 ATARI800_OPTIONS='-kbdjoy0'

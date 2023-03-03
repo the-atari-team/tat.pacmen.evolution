@@ -205,7 +205,7 @@ byte array n24p8[1] = [8,32,56,80,104,128,152]
 
 const game_screen = @game_screen
 
-// byte array playfieldFilename[1] = ['D1:PLAYSA.DAT']
+// byte array playfieldFilename[1] = ["D1:PLAYSA.DAT"]
 // const playfieldFilenameNumPos = 8
 
 procedure @load_background(charOfPlayfield)
@@ -754,16 +754,16 @@ begin
 //      begin
 //        @fast_gotox(28 + i)
 //        if ghost_mode[i] == SCATTER then
-//          @printff('\0S')
+//          @printff("\0S")
 //
 //        else if ghost_mode[i] == CHASE then
-//          @printff('\0C')
+//          @printff("\0C")
 //
 //        else if ghost_mode[i] == ANGST then
-//          @printff('\0A')
+//          @printff("\0A")
 //
 //        else //  if ghost_mode[i] == AUGEN then
-//          @printff('\0:')
+//          @printff("\0:")
 //      end
 //    end
 
@@ -771,7 +771,7 @@ begin
     @showScore()
 
 //    @fast_gotoxy(0,0)
-//    @printff('%d ', countOfCookies)
+//    @printff("%d ", countOfCookies)
 
 //    @backcolorline($0f)
 
@@ -781,7 +781,7 @@ begin
   end
 
 //  @fast_gotoxy(0,22)
-//  @printff('TIME: %d    ', gameTime)
+//  @printff("TIME: %d    ", gameTime)
 //  @getchar()
   return 0
 end
@@ -849,7 +849,7 @@ begin
   KRPDEL := $12
   keyrep := 2
 
-  @clearbyte($be07,12)  // clear 'Loading ...'
+  @clearbyte($be07,12)  // clear "Loading ..."
 
   game_mode := MODE_INTRO
 
@@ -905,12 +905,12 @@ begin
       @INIT_SET_BYTES_PER_LINE(40)
 
       @fast_gotoxy(0,22)
-      @printff('\21UP - PTR \1HIGH SCORE')
+      @printff("\21UP - PTR \1HIGH SCORE")
       @fast_gotoxy(20,22)
-//      @printff('\200000000    \000000000')
+//      @printff("\200000000    \000000000")
       @print_score()
       @fast_gotox(28)
-      @printff('[\\]^') // String fuer den ProgressBar Farbe 0 und 4 Zeichen
+      @printff("[\\]^") // String fuer den ProgressBar Farbe 0 und 4 Zeichen
 //      @fast_gotox(32)
       @print_highscore()
 
@@ -1115,49 +1115,49 @@ begin
 
 end
 
-include 'FAST_SCREEN_OUTPUT.INC'
-include 'SCREEN_OUTPUT.INC'
-include 'PRINTF.INC'
-include 'FILLBYTE.INC'
-// include 'GETCHAR.INC'
-// include 'IO.INC'
-include 'MATH.INC'
-//include 'VERYFASTMATH_MUL.INC'
-//include 'MATH_HYPOT.INC'
-//include 'MATH_SQRT.INC'
-include 'BASIC.INC'
-include 'RANDOM.INC'
-include 'ARRAY.INC'
-include 'STICK.INC'
-// include 'PEEKNPOKE.INC' // funktioniert jetzt mit @mem[addr] := byte
-include 'BACKCOLORLINE.INC'
+include "FAST_SCREEN_OUTPUT.INC"
+include "SCREEN_OUTPUT.INC"
+include "PRINTF.INC"
+include "FILLBYTE.INC"
+// include "GETCHAR.INC"
+// include "IO.INC"
+include "MATH.INC"
+//include "VERYFASTMATH_MUL.INC"
+//include "MATH_HYPOT.INC"
+//include "MATH_SQRT.INC"
+include "BASIC.INC"
+include "RANDOM.INC"
+include "ARRAY.INC"
+include "STICK.INC"
+// include "PEEKNPOKE.INC" // funktioniert jetzt mit @mem[addr] := byte
+include "BACKCOLORLINE.INC"
 
-include 'pacmen-struct.INC'
-include 'draw-ghosts.INC'
-include 'GHOSTS.INC'
-include 'PACMDATA.INC'    // pacmen-data.wnf
-include 'font.INC'
-include 'draw-pacmen.INC'
-include 'PACMOVE.INC'     // move-pacmen.wnf
-include 'GHSTMOVE.INC'    // move-ghost.wnf
-include 'GAME-DLI.INC'
-include 'PACINTRO.INC'    // pacmen-title-intro.wnf
-include 'COOKIE.INC'
-include 'KEYCODE.INC'
-include 'FADE.INC'
-include 'SHUFFLE.INC'
-include 'EXTRA.INC'
-include 'LEVEL.INC'
-include 'COLLISION.INC'
-include 'AUDIOPLY.INC'    // audio-play.wnf
+include "pacmen-struct.INC"
+include "draw-ghosts.INC"
+include "GHOSTS.INC"
+include "PACMDATA.INC"    // pacmen-data.wnf
+include "font.INC"
+include "draw-pacmen.INC"
+include "PACMOVE.INC"     // move-pacmen.wnf
+include "GHSTMOVE.INC"    // move-ghost.wnf
+include "GAME-DLI.INC"
+include "PACINTRO.INC"    // pacmen-title-intro.wnf
+include "COOKIE.INC"
+include "KEYCODE.INC"
+include "FADE.INC"
+include "SHUFFLE.INC"
+include "EXTRA.INC"
+include "LEVEL.INC"
+include "COLLISION.INC"
+include "AUDIOPLY.INC"    // audio-play.wnf
 
-include 'SHOWSCR.INC'     // show-score.wnf
-include 'HIGHSCORE.INC'
-include 'progress-slider.INC'
-include 'huffman-decode.INC'
-include 'COMPRESSED-PLAYFIELDS.INC' // Die Playfields
+include "SHOWSCR.INC"     // show-score.wnf
+include "HIGHSCORE.INC"
+include "progress-slider.INC"
+include "huffman-decode.INC"
+include "COMPRESSED-PLAYFIELDS.INC" // Die Playfields
 
-include 'music/NOTEN.INC'
-include 'music/HEXEN.INC'
-include 'music/pacmen-music.INC'
-include 'music/pacmen-audio.INC'
+include "music/NOTEN.INC"
+include "music/HEXEN.INC"
+include "music/pacmen-music.INC"
+include "music/pacmen-audio.INC"
